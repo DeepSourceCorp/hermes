@@ -23,52 +23,20 @@ func TestExponential_Duration(t *testing.T) {
 			fields{
 				attempt: uint64(2),
 				Factor:  float64(3),
-				Jitter:  false,
 				Min:     1 * time.Second,
 				Max:     10 * time.Second,
 			},
 			9 * time.Second,
 		},
 		{
-			"must use factor 2 if factor < 0",
+			"must return Max if duration value greater than Max",
 			fields{
-				attempt: uint64(2),
-				Factor:  float64(-1),
-				Jitter:  false,
+				attempt: uint64(20),
+				Factor:  float64(2),
 				Min:     1 * time.Second,
 				Max:     10 * time.Second,
 			},
-			4 * time.Second,
-		},
-		{
-			"must return Max if duration greater than Max",
-			fields{
-				attempt: uint64(3),
-				Jitter:  false,
-				Min:     1 * time.Minute,
-				Max:     2 * time.Minute,
-				Factor:  2,
-			},
-			2 * time.Minute,
-		},
-		{
-			"must use default Min if Min lesser than 0",
-			fields{
-				attempt: 1,
-				Min:     -1 * time.Second,
-				Max:     10 * time.Minute,
-				Factor:  1,
-			},
-			defaultMin,
-		},
-		{
-			"must use default Max if Max lesser than 0",
-			fields{
-				attempt: 1,
-				Min:     10 * time.Minute,
-				Max:     -1 * time.Second,
-			},
-			defaultMax,
+			10 * time.Second,
 		},
 	}
 	for _, tt := range tests {
@@ -85,4 +53,54 @@ func TestExponential_Duration(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestExponential_Duration_WithJitter(t *testing.T) {
+	b := &Exponential{
+		attempt: uint64(2),
+		Factor:  float64(3),
+		Jitter:  true,
+		Min:     1 * time.Second,
+		Max:     10 * time.Second,
+	}
+	// TODO: This is probably not deterministic enough.
+	t.Run("must generate a random duration between the minimum and the exponential value", func(t *testing.T) {
+		got := b.Duration()
+		if got < b.Min || got > 9*time.Second {
+			t.Errorf("Exponential.Duration() = %v, want %v > x < %v", got, b.Min, 9*time.Second)
+		}
+	})
+}
+
+func TestNewExponential(t *testing.T) {
+	t.Run("generated duration must generate sanitized object", func(t *testing.T) {
+		got := NewExponential(0, true, -1*time.Second, -1*time.Second)
+		if got.Factor != 2 {
+			t.Errorf("NewExponential() Exponential.Factor = %v, want %v", got.Factor, defaultFactor)
+		}
+
+		if got.Min != defaultMin {
+			t.Errorf("NewExponential() Exponential.Min = %v, want %v", got.Min, defaultMin)
+		}
+
+		if got.Max != defaultMax {
+			t.Errorf("NewExponential() Exponential.Max = %v, want %v", got.Max, defaultMax)
+		}
+
+		got = NewExponential(2, false, -1*time.Second, time.Duration(maxInt64)+10)
+
+		if got.Max != defaultMax {
+			t.Errorf("NewExponential() Exponential.Max = %v, want %v", got.Max, defaultMax)
+		}
+	})
+
+	t.Run("Min and Max should fallback to default if Min > Max", func(t *testing.T) {
+		got := NewExponential(0, true, 20*time.Second, 1*time.Second)
+		if got.Max != defaultMax || got.Min != defaultMin {
+			t.Errorf(
+				"NewExponential() Exponential.Max = %v, want %v, Exponential.Min=%v, want = %v",
+				got.Max, defaultMax, got.Min, defaultMin,
+			)
+		}
+	})
 }
