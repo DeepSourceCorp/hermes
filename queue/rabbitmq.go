@@ -33,7 +33,7 @@ func (c *RabbitMQ) Dial(ctx context.Context, opts RabbitMQOpts) (err error) {
 
 		retryDuration := b.Duration()
 
-		log.Warn("retrying connection in %d", retryDuration)
+		log.Warnf("retrying connection in %d", retryDuration)
 		time.Sleep(retryDuration)
 		retryCount++
 	}
