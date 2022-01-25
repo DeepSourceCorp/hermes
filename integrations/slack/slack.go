@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
@@ -58,7 +57,7 @@ type Config struct {
 
 // Client contains a http.Client along with config.
 type Client struct {
-	*http.Client
+	Client *http.Client
 	config *Config
 }
 
@@ -74,7 +73,7 @@ func NewClient(token string) *Client {
 }
 
 // Sends message to the specified channel.
-func (client *Client) SendMessage(ctx context.Context, channel, text string, attachments []*Attachment) error {
+func (client *Client) SendMessage(ctx context.Context, channel, text string, attachments []*Attachment) (bool, error) {
 	req := &request{
 		Channel:     channel,
 		Text:        text,
@@ -84,18 +83,23 @@ func (client *Client) SendMessage(ctx context.Context, channel, text string, att
 	// marshal request into JSON
 	b, err := json.Marshal(req)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	return client.sendResponse(ctx, b)
+	status, err := client.Request(ctx, b)
+	if err != nil {
+		return status, err
+	}
+
+	return status, nil
 }
 
 // Sends a HTTP request to the URI and decodes response.
-func (client *Client) sendResponse(ctx context.Context, b []byte) error {
+func (client *Client) Request(ctx context.Context, b []byte) (bool, error) {
 	// create new request
 	req, err := http.NewRequest(http.MethodPost, client.config.URI, bytes.NewBuffer(b))
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// add headers
@@ -104,9 +108,9 @@ func (client *Client) sendResponse(ctx context.Context, b []byte) error {
 	req.Header.Set("Content-type", "application/json; charset=utf-8")
 
 	// send HTTP request
-	resp, err := client.Do(req)
+	resp, err := client.Client.Do(req)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	defer resp.Body.Close()
@@ -114,13 +118,13 @@ func (client *Client) sendResponse(ctx context.Context, b []byte) error {
 	// decode response
 	var res response
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return err
+		return false, err
 	}
 
 	// check response and return error
 	if !res.Ok {
-		return fmt.Errorf(res.Error)
+		return false, err
 	}
 
-	return nil
+	return res.Ok, nil
 }
