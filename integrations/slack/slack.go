@@ -59,7 +59,7 @@ type Client struct {
 }
 
 // NewClient returns a Client.
-func NewClient(uri string, token string) *Client {
+func NewClient(uri, token string) *Client {
 	return &Client{
 		Client: http.DefaultClient,
 		config: &Config{
