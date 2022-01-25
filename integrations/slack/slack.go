@@ -7,9 +7,6 @@ import (
 	"net/http"
 )
 
-// postMessage API URL
-const URI = "https://api.slack.com/api/chat.postMessage"
-
 // request represents a typical HTTP request sent to the Slack API.
 type request struct {
 	Channel     string      `json:"channel"`
@@ -62,11 +59,11 @@ type Client struct {
 }
 
 // NewClient returns a Client.
-func NewClient(token string) *Client {
+func NewClient(uri string, token string) *Client {
 	return &Client{
 		Client: http.DefaultClient,
 		config: &Config{
-			URI:   URI,
+			URI:   uri,
 			Token: token,
 		},
 	}
