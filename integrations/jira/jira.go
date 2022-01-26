@@ -1,11 +1,11 @@
 package jira
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
-	"strings"
 )
 
 // Issue represents a Jira issue.
