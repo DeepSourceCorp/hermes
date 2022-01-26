@@ -84,7 +84,11 @@ func (client *Client) CreateIssue(issue Issue) (key string, err error) {
 	}
 
 	// read response body
-	respBody, _ := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
 	var parsed map[string]interface{}
 	json.Unmarshal([]byte(string(respBody)), &parsed)
 
@@ -93,7 +97,7 @@ func (client *Client) CreateIssue(issue Issue) (key string, err error) {
 
 	if resp.StatusCode == 201 {
 		return issue.Key, nil
-	} else {
-		return "", errors.New("Error:" + resp.Status)
 	}
+
+	return "", errors.New("Error:" + resp.Status)
 }
