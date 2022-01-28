@@ -29,6 +29,18 @@ type Client struct {
 	config *Config
 }
 
+// Result represents the response structure.
+type Result struct {
+	Data struct {
+		IssueCreate struct {
+			Issue struct {
+				ID    string `json:"id"`
+				Title string `json:"title,omitempty"`
+			} `json:"issue,omitempty"`
+		} `json:"issueCreate,omitempty"`
+	} `json:"data,omitempty"`
+}
+
 // NewClient returns a Linear client.
 func NewClient(uri, token, teamID string) *Client {
 	return &Client{
@@ -102,11 +114,15 @@ func (client *Client) CreateIssue(issue Issue) (id string, err error) {
 		return "", err
 	}
 
-	var parsed map[string]interface{}
-	json.Unmarshal([]byte(string(respBody)), &parsed)
+	// unmarshal response body into Result
+	parsed := Result{}
+	err = json.Unmarshal([]byte(string(respBody)), &parsed)
+	if err != nil {
+		return "", err
+	}
 
 	// set issue ID
-	issue.ID = parsed["data"].(map[string]interface{})["issueCreate"].(map[string]interface{})["issue"].(map[string]interface{})["id"].(string)
+	issue.ID = parsed.Data.IssueCreate.Issue.ID
 
 	if resp.StatusCode == 200 {
 		return issue.ID, nil
