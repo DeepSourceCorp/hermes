@@ -34,6 +34,13 @@ type IssueType struct {
 	Name string `json:"name,omitempty"`
 }
 
+// Result represents the response structure.
+type Result struct {
+	ID   string `json:"id,omitempty"`
+	Key  string `json:"key,omitempty"`
+	Self string `json:"self,omitempty"`
+}
+
 // Config stores client configuration.
 type Config struct {
 	URI        string
@@ -89,15 +96,19 @@ func (client *Client) CreateIssue(issue Issue) (key string, err error) {
 		return "", err
 	}
 
-	var parsed map[string]interface{}
-	json.Unmarshal([]byte(string(respBody)), &parsed)
+	// unmarshal response body into Result
+	parsed := Result{}
+	err = json.Unmarshal([]byte(string(respBody)), &parsed)
+	if err != nil {
+		return "", err
+	}
 
-	// set issue key
-	issue.Key = parsed["key"].(string)
+	// set issue Key
+	issue.Key = parsed.Key
 
 	if resp.StatusCode == 201 {
 		return issue.Key, nil
 	}
 
-	return "", errors.New("Error:" + resp.Status)
+	return "", errors.New("Error: " + resp.Status)
 }
