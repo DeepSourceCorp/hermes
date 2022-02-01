@@ -1,6 +1,6 @@
 package rule
 
 type Rule struct {
-	Trigger RuleTrigger `json:"trigger"`
-	Action  RuleAction  `json:"action"`
+	Trigger Trigger `json:"trigger"`
+	Action  Action  `json:"action"`
 }

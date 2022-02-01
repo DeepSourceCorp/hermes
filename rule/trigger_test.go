@@ -65,7 +65,7 @@ func TestRuleTrigger_Evaluate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &RuleTrigger{
+			c := &Trigger{
 				RuleExpression: tt.fields.RuleExpression,
 				accessors:      tt.fields.accessors,
 			}
@@ -102,12 +102,12 @@ func TestRuleTrigger_extractAccessors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &RuleTrigger{
+			c := &Trigger{
 				RuleExpression: tt.fields.RuleExpression,
 				accessors:      tt.fields.accessors,
 			}
 			if got := c.extractAccessors(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("RuleTrigger.extractAccessors() = %v, want %v", got, tt.want)
+				t.Errorf("Trigger.extractAccessors() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -143,7 +143,7 @@ func TestRuleTrigger_MakeParams(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &RuleTrigger{
+			c := &Trigger{
 				RuleExpression: tt.fields.RuleExpression,
 				accessors:      tt.fields.accessors,
 			}

@@ -16,7 +16,8 @@ func GetTemplater(opts *Opts) ITemplater {
 	switch opts.Type {
 	case "text":
 		return new(textTemplater)
-
+	case "mustache":
+		return new(mustacheTemplater)
 	}
 	return nil
 }
