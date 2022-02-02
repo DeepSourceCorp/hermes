@@ -6,6 +6,7 @@ import (
 	redisInfra "github.com/deepsourcelabs/hermes/infrastructure/redis"
 	"github.com/deepsourcelabs/hermes/interfaces/http"
 	httpHandler "github.com/deepsourcelabs/hermes/interfaces/http"
+	"github.com/deepsourcelabs/hermes/rule"
 	redisStore "github.com/deepsourcelabs/hermes/store/redis"
 	"github.com/deepsourcelabs/hermes/subscriber"
 	"github.com/deepsourcelabs/hermes/subscription"
@@ -25,14 +26,17 @@ func StartHTTPServer() {
 
 	subscriberStore := redisStore.NewSubscriberStore(redisClient)
 	subscriptionStore := redisStore.NewSubscriptionStore(redisClient)
+	ruleStore := redisStore.NewRuleStore(redisClient)
 
 	subscriberService := subscriber.NewService(subscriberStore)
 	subscriptionService := subscription.NewService(subscriptionStore)
+	ruleService := rule.NewService(ruleStore)
 
 	subscriberHandler := httpHandler.NewSubscriberHandler(subscriberService)
 	subscriptionHandler := httpHandler.NewSubscriptionHandler(subscriptionService)
+	ruleHandler := httpHandler.NewRuleHandler(ruleService)
 
-	subscriberRouter := http.NewRouter(subscriberHandler, subscriptionHandler)
+	subscriberRouter := http.NewRouter(subscriberHandler, subscriptionHandler, ruleHandler)
 	subscriberRouter.AddRoutes(e)
 	e.Logger.Fatal(e.Start(":7272"))
 

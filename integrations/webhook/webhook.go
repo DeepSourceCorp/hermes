@@ -5,7 +5,7 @@ import (
 )
 
 type Webhook struct {
-	Templater templater.ITemplater
+	Templater templater.ITemplater `json:"Templater"`
 }
 
 const INTGR_TYPE_WEBHOOK = "webhook"

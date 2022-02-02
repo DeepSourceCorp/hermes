@@ -3,7 +3,9 @@ package rule
 import "github.com/deepsourcelabs/hermes/integrations/webhook"
 
 type Action interface {
-	Do(parms interface{}) (results interface{}, err error)
+	Do(params interface{}) (results interface{}, err error)
+	Name() string
+	TemplateID() string
 }
 
 type Opts struct {

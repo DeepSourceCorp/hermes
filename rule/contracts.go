@@ -2,9 +2,9 @@ package rule
 
 type CreateRequest struct {
 	Trigger        Trigger `json:"trigger"`
-	Action         Opts
-	SubscriberID   string
-	SubscriptionID string
+	Action         Opts    `json:"action"`
+	SubscriberID   string  `json:"subscriber_id"`
+	SubscriptionID string  `json:"subscription_id"`
 }
 
 type GetRequest struct {
