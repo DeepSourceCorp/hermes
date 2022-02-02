@@ -11,12 +11,14 @@ type Router interface {
 type router struct {
 	subscriberHandler   SubscriberHandler
 	subscriptionHandler SubscriptionHandler
+	ruleHandler         RuleHandler
 }
 
-func NewRouter(subscriberHandler SubscriberHandler, subscriptionHandler SubscriptionHandler) Router {
+func NewRouter(subscriberHandler SubscriberHandler, subscriptionHandler SubscriptionHandler, ruleHandler RuleHandler) Router {
 	return &router{
 		subscriberHandler,
 		subscriptionHandler,
+		ruleHandler,
 	}
 }
 
@@ -26,4 +28,6 @@ func (r *router) AddRoutes(e *echo.Echo) {
 	e.POST("/subscribers/:subscriberID/subscriptions", r.subscriptionHandler.PostSubscription())
 	e.GET("/subscribers/:subscriberID/subscriptions/:id", r.subscriptionHandler.GetSubscription())
 	e.GET("/subscribers/:subscriberID/subscriptions", r.subscriptionHandler.FilterSubscriptions())
+	e.GET("/subscribers/:subscriberID/subscriptions/:subscriptionID/rules/:id", r.ruleHandler.GetRule())
+	e.POST("/rules", r.ruleHandler.PostRule())
 }
