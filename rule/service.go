@@ -5,8 +5,9 @@ import (
 )
 
 type Service interface {
-	Create(ctx context.Context, request *CreateRequest) (*Rule, error)
-	GetByID(ctx context.Context, request *GetRequest) (*Rule, error)
+	Create(ctx context.Context, request *CreateRequest) (*SerializableRule, error)
+	GetByID(ctx context.Context, request *GetRequest) (*SerializableRule, error)
+	Filter(ctx context.Context, request *FilterRequest) ([]SerializableRule, error)
 }
 
 type service struct {
@@ -19,27 +20,22 @@ func NewService(repository Repository) Service {
 	}
 }
 
-func (svc *service) Create(ctx context.Context, request *CreateRequest) (*Rule, error) {
-	opts := &Opts{
-		Type: request.Action.Type,
-	}
-	a := NewAction(opts)
-	rule := &Rule{
-		Trigger: request.Trigger,
-		Action:  a,
-	}
-
-	if err := svc.repository.Create(ctx, rule); err != nil {
-		return nil, err
-	}
-
-	return rule, nil
+func (svc *service) Create(ctx context.Context, request *CreateRequest) (*SerializableRule, error) {
+	return svc.repository.Create(
+		ctx,
+		&SerializableRule{
+			SubscriberID:   request.SubscriberID,
+			SubscriptionID: request.SubscriptionID,
+			Trigger:        request.Trigger,
+			Action:         request.Action,
+		},
+	)
 }
 
-func (svc *service) GetByID(ctx context.Context, request *GetRequest) (*Rule, error) {
-	rule, err := svc.repository.GetByID(ctx, request.SubscriberID, request.SubscriptionID, request.ID)
-	if err != nil {
-		return nil, err
-	}
-	return rule, nil
+func (svc *service) GetByID(ctx context.Context, request *GetRequest) (*SerializableRule, error) {
+	return svc.repository.GetByID(ctx, request.ID)
+}
+
+func (svc *service) Filter(ctx context.Context, request *FilterRequest) ([]SerializableRule, error) {
+	return svc.repository.GetAll(ctx, request.SubscriptionID)
 }

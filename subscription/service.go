@@ -2,8 +2,6 @@ package subscription
 
 import (
 	"context"
-
-	"github.com/segmentio/ksuid"
 )
 
 type service struct {
@@ -19,7 +17,6 @@ func NewService(repository Repository) Service {
 func (svc *service) Create(ctx context.Context, request *CreateRequest) (*Subscription, error) {
 	subscription := &Subscription{
 		Secret:       request.Secret,
-		ID:           ksuid.New().String(),
 		Type:         request.Type,
 		SubscriberID: request.SubscriberID,
 	}
@@ -27,7 +24,7 @@ func (svc *service) Create(ctx context.Context, request *CreateRequest) (*Subscr
 }
 
 func (svc *service) GetByID(ctx context.Context, request *GetRequest) (*Subscription, error) {
-	return svc.repository.GetByID(ctx, request.SubscriberID, request.ID)
+	return svc.repository.GetByID(ctx, request.ID)
 }
 
 func (svc *service) GetAll(ctx context.Context, request *GetAllRequest) ([]Subscription, error) {

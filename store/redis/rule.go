@@ -3,60 +3,116 @@ package redis
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"time"
 
 	model "github.com/deepsourcelabs/hermes/rule"
 	"github.com/go-redis/redis/v8"
+	"github.com/segmentio/ksuid"
 )
 
-type ruleStore struct {
+type storeSubscription struct {
 	Conn *redis.Client
 }
 
-type action struct {
-	Name       string
-	TemplateID string
-}
-
-type ruleObj struct {
-	Trigger model.Trigger `json:"trigger"`
-	Action  action        `json:"action"`
-}
-
 func NewRuleStore(conn *redis.Client) model.Repository {
-	return &ruleStore{
+	return &storeSubscription{
 		Conn: conn,
 	}
 }
 
-func (store *ruleStore) Create(ctx context.Context, rule *model.Rule) error {
-	a := action{
-		Name:       rule.Action.Name(),
-		TemplateID: rule.Action.TemplateID(),
-	}
-
-	ro := ruleObj{
-		Trigger: rule.Trigger,
-		Action:  a,
-	}
-
-	raw, err := json.Marshal(ro)
+func (s *storeSubscription) Create(ctx context.Context, rule *model.SerializableRule) (*model.SerializableRule, error) {
+	rule.ID = ksuid.New().String()
+	raw, err := json.Marshal(rule)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if err := store.Conn.Set(ctx, rule.Trigger.RuleExpression, raw, 0).Err(); err != nil {
-		return err
+
+	pipe := s.Conn.TxPipeline()
+	// Set the rule object.
+	pipe.Expire(ctx, "tx_pipeline_counter", 1*time.Hour)
+	if err := pipe.Set(
+		ctx,
+		fmt.Sprintf("rule:%s", rule.ID),
+		raw,
+		0,
+	).Err(); err != nil {
+		return nil, err
 	}
-	return nil
+
+	// Set the ruleID against the subcsriptionID.
+	if err := pipe.LPush(
+		ctx,
+		fmt.Sprintf("rule-list:%s", rule.SubscriptionID),
+		rule.ID,
+	).Err(); err != nil {
+		return nil, err
+	}
+
+	_, err = pipe.Exec(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return rule, nil
 }
 
-func (store *ruleStore) GetByID(ctx context.Context, subscriberID, subscriptionID, id string) (*model.Rule, error) {
-	r := new(model.Rule)
-	res, err := store.Conn.Get(ctx, id).Result()
+func (s *storeSubscription) GetByID(ctx context.Context, id string) (*model.SerializableRule, error) {
+	rule := new(model.SerializableRule)
+	res, err := s.Conn.Get(
+		ctx,
+		fmt.Sprintf("rule:%s", id),
+	).Result()
 	if err != nil {
 		return nil, err
 	}
-	if err := json.Unmarshal([]byte(res), r); err != nil {
+	if err := json.Unmarshal([]byte(res), rule); err != nil {
 		return nil, err
 	}
-	return r, nil
+	return rule, nil
+}
+
+func (s *storeSubscription) GetAll(ctx context.Context, subscriptionID string) ([]model.SerializableRule, error) {
+	rules := []model.SerializableRule{}
+
+	key := fmt.Sprintf("rule-list:%s", subscriptionID)
+
+	// Count of subscriptions stored against the subscriberID
+	size, err := s.Conn.LLen(
+		ctx,
+		key,
+	).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the subscription IDs for the subscription.
+	ids, err := s.Conn.LRange(
+		ctx,
+		key,
+		0,
+		size,
+	).Result()
+	if err != nil {
+		return rules, err
+	}
+
+	// Populate a slice with the rules for the subscription.
+	for _, id := range ids {
+		res, err := s.Conn.Get(
+			ctx,
+			fmt.Sprintf("rule:%s", id),
+		).Result()
+		if err != nil {
+			return rules, err
+		}
+
+		s := new(model.SerializableRule)
+		if err := json.Unmarshal([]byte(res), s); err != nil {
+			return rules, err
+		}
+		rules = append(rules, *s)
+	}
+
+	return rules, nil
 }

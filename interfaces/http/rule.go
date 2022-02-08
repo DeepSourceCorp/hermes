@@ -29,6 +29,8 @@ func (handler *ruleHandler) PostRule() echo.HandlerFunc {
 		if err := c.Bind(request); err != nil {
 			failBadRequest(c, err)
 		}
+		request.SubscriberID = c.Param("subscriberID")
+		request.SubscriptionID = c.Param("subscriptionID")
 		response, err := handler.Create(ctx, request)
 		if err != nil {
 			failInternal(c, err)
