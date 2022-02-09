@@ -2,8 +2,6 @@ package subscriber
 
 import (
 	"context"
-
-	"github.com/segmentio/ksuid"
 )
 
 type service struct {
@@ -17,22 +15,12 @@ func NewService(repository Repository) Service {
 }
 
 func (svc *service) Create(ctx context.Context, req *CreateRequest) (*Subscriber, error) {
-	subscriber := &Subscriber{
-		ID:   ksuid.New().String(),
-		Slug: req.Slug,
-	}
-
-	if err := svc.repository.Create(ctx, subscriber); err != nil {
-		return nil, err
-	}
-
-	return subscriber, nil
+	return svc.repository.Create(
+		ctx,
+		&Subscriber{Slug: req.Slug},
+	)
 }
 
 func (svc *service) GetByID(ctx context.Context, req *GetRequest) (*Subscriber, error) {
-	subscriber, err := svc.repository.GetByID(ctx, req.ID)
-	if err != nil {
-		return nil, err
-	}
-	return subscriber, nil
+	return svc.repository.GetByID(ctx, req.ID)
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/deepsourcelabs/hermes/subscription"
 	model "github.com/deepsourcelabs/hermes/subscription"
 	"github.com/go-redis/redis/v8"
+	"github.com/segmentio/ksuid"
 )
 
 type subscriptionStore struct {
@@ -22,26 +23,36 @@ func NewSubscriptionStore(Conn *redis.Client) subscription.Repository {
 }
 
 func (store *subscriptionStore) Create(ctx context.Context, subscription *model.Subscription) (*model.Subscription, error) {
+	subscription.ID = ksuid.New().String()
 	raw, err := json.Marshal(subscription)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println("thenga")
-	fmt.Println(subscription)
-
+	// Start a Redis MULTI
 	pipe := store.Conn.TxPipeline()
 	pipe.Expire(ctx, "tx_pipeline_counter", 1*time.Hour)
-	key1 := fmt.Sprintf("subscription:%s:%s", subscription.SubscriberID, subscription.ID)
-	if err := pipe.Set(ctx, key1, raw, 0).Err(); err != nil {
+
+	// Set the subscription object.
+	if err := pipe.Set(
+		ctx,
+		fmt.Sprintf("subscription:%s", subscription.ID),
+		raw,
+		0,
+	).Err(); err != nil {
 		return nil, err
 	}
 
-	key2 := fmt.Sprintf("subscription-list:%s", subscription.SubscriberID)
-	if err := pipe.LPush(ctx, key2, subscription.ID).Err(); err != nil {
+	// Map the subscription against the subscriber.
+	if err := pipe.LPush(
+		ctx,
+		fmt.Sprintf("subscription-list:%s", subscription.SubscriberID),
+		subscription.ID,
+	).Err(); err != nil {
 		return nil, err
 	}
 
+	// Redis EXEC
 	_, err = pipe.Exec(ctx)
 	if err != nil {
 		return nil, err
@@ -50,14 +61,17 @@ func (store *subscriptionStore) Create(ctx context.Context, subscription *model.
 	return subscription, nil
 }
 
-func (store *subscriptionStore) GetByID(ctx context.Context, subscriberID, id string) (*model.Subscription, error) {
-	key := fmt.Sprintf("subscription:%s:%s", subscriberID, id)
-
+func (store *subscriptionStore) GetByID(ctx context.Context, id string) (*model.Subscription, error) {
 	subscription := new(model.Subscription)
-	res, err := store.Conn.Get(ctx, key).Result()
+
+	res, err := store.Conn.Get(
+		ctx,
+		fmt.Sprintf("subscription:%s", id),
+	).Result()
 	if err != nil {
 		return nil, err
 	}
+
 	if err := json.Unmarshal([]byte(res), subscription); err != nil {
 		return nil, err
 	}
@@ -67,29 +81,43 @@ func (store *subscriptionStore) GetByID(ctx context.Context, subscriberID, id st
 func (store *subscriptionStore) GetAll(ctx context.Context, subscriberID string) ([]model.Subscription, error) {
 	subscriptions := []model.Subscription{}
 
-	key1 := fmt.Sprintf("subscription-list:%s", subscriberID)
-	sLen, err := store.Conn.LLen(ctx, key1).Result()
+	key := fmt.Sprintf("subscription-list:%s", subscriberID)
+
+	// Count of subscriptions stored against the subscriberID
+	size, err := store.Conn.LLen(
+		ctx,
+		key,
+	).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	sIDs, err := store.Conn.LRange(ctx, key1, 0, sLen).Result()
+	// Get the subscription IDs for the subscriber
+	ids, err := store.Conn.LRange(
+		ctx,
+		key,
+		0,
+		size,
+	).Result()
 	if err != nil {
 		return subscriptions, err
 	}
 
-	for _, id := range sIDs {
-		key2 := fmt.Sprintf("subscription:%s:%s", subscriberID, id)
-		res, err := store.Conn.Get(ctx, key2).Result()
+	// Populate a slice with the subscriptions for the subscriber
+	for _, id := range ids {
+		res, err := store.Conn.Get(
+			ctx,
+			fmt.Sprintf("subscription:%s", id),
+		).Result()
 		if err != nil {
 			return subscriptions, err
 		}
-		sub := new(model.Subscription)
-		if err := json.Unmarshal([]byte(res), sub); err != nil {
+
+		s := new(model.Subscription)
+		if err := json.Unmarshal([]byte(res), s); err != nil {
 			return subscriptions, err
 		}
-		fmt.Println(sub)
-		subscriptions = append(subscriptions, *sub)
+		subscriptions = append(subscriptions, *s)
 	}
 
 	return subscriptions, nil
