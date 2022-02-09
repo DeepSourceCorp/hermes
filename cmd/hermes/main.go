@@ -5,6 +5,7 @@ import (
 
 	"github.com/RichardKnop/machinery/v1/config"
 	"github.com/deepsourcelabs/hermes/event"
+	"github.com/deepsourcelabs/hermes/eventrule"
 
 	"github.com/deepsourcelabs/hermes/infrastructure"
 	"github.com/deepsourcelabs/hermes/interfaces/http"
@@ -17,45 +18,53 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func startWorkers() {
-	machineryOpts := &config.Config{
-		Broker:        "redis://localhost:6379",
-		DefaultQueue:  "machinery_tasks",
-		ResultBackend: "redis://localhost:6379",
-	}
-	machinery, err := infrastructure.GetMachineryServer(machineryOpts)
+type App struct {
+	http      *echo.Echo
+	store     *redis.Client
+	taskQueue *infrastructure.Machinery
+}
+
+func (hermes *App) InitTaskQueue(opts *config.Config) {
+	machinery, err := infrastructure.GetMachineryServer(opts)
 	if err != nil {
 		panic(err)
 	}
-	machinery.StartWorker("rule-engine", 100)
+	hermes.taskQueue = machinery
 }
 
-func startHTTPServer() {
-	redisOpts := &redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
-	}
+func (hermes *App) InitStore(opts *redis.Options) {
+	hermes.store = infrastructure.GetRedisClient(opts)
+}
 
-	redisClient := infrastructure.GetRedisClient(redisOpts)
+func (hermes *App) startWorkers() {
+	hermes.taskQueue.StartWorker("rule-engine", 100)
+}
+
+func (hermes *App) startHTTPServer() {
 
 	e := echo.New()
+	hermes.http = e
 
 	// e.Use(middleware.Logger())
 
-	subscriberStore := redisStore.NewSubscriberStore(redisClient)
-	subscriptionStore := redisStore.NewSubscriptionStore(redisClient)
-	ruleStore := redisStore.NewRuleStore(redisClient)
-
-	subscriberService := subscriber.NewService(subscriberStore)
-	subscriptionService := subscription.NewService(subscriptionStore)
-	ruleService := rule.NewService(ruleStore)
-	eventService := event.NewService(nil)
-
-	subscriberHandler := httpHandler.NewSubscriberHandler(subscriberService)
-	subscriptionHandler := httpHandler.NewSubscriptionHandler(subscriptionService)
-	ruleHandler := httpHandler.NewRuleHandler(ruleService)
+	eventNotifier := event.NewNotifier(hermes.taskQueue)
+	eventService := event.NewService(eventNotifier)
 	eventHandler := httpHandler.NewEventHandler(eventService)
+
+	subscriberStore := redisStore.NewSubscriberStore(hermes.store)
+	subscriberService := subscriber.NewService(subscriberStore)
+	subscriberHandler := httpHandler.NewSubscriberHandler(subscriberService)
+
+	subscriptionStore := redisStore.NewSubscriptionStore(hermes.store)
+	subscriptionService := subscription.NewService(subscriptionStore)
+	subscriptionHandler := httpHandler.NewSubscriptionHandler(subscriptionService)
+
+	ruleStore := redisStore.NewRuleStore(hermes.store)
+	ruleService := rule.NewService(ruleStore)
+	ruleHandler := httpHandler.NewRuleHandler(ruleService)
+
+	eventRuleListener := eventrule.NewEventListener(subscriptionService, ruleService, hermes.taskQueue)
+	eventRuleListener.RegisterListener()
 
 	subscriberRouter := http.NewRouter(
 		subscriberHandler,
@@ -68,17 +77,32 @@ func startHTTPServer() {
 }
 
 func main() {
+	hermes := new(App)
+
+	hermes.InitStore(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+
+	hermes.InitTaskQueue(&config.Config{
+		Broker:        "redis://localhost:6379",
+		DefaultQueue:  "machinery_tasks",
+		ResultBackend: "redis://localhost:6379",
+	})
+
+	// TODO: There is a nightmare at the moment.  SIGINT is only received by the first routine, so Cmd+C doesn't work.
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		startHTTPServer()
+		hermes.startWorkers()
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		startWorkers()
+		hermes.startHTTPServer()
 	}()
 
 	wg.Wait()

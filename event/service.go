@@ -2,6 +2,11 @@ package event
 
 import (
 	"context"
+	"time"
+
+	// "github.com/deepsourcelabs/hermes/eventrule"
+
+	"github.com/segmentio/ksuid"
 )
 
 type Service interface {
@@ -9,15 +14,22 @@ type Service interface {
 }
 
 type service struct {
-	repository Repository
+	notifier Notifier
 }
 
-func NewService(repository Repository) Service {
+func NewService(notifier Notifier) Service {
 	return &service{
-		repository: repository,
+		notifier: notifier,
 	}
 }
 
 func (svc *service) Create(ctx context.Context, request *CreateEventRequest) error {
-	return nil
+	event := &Event{
+		ID:           ksuid.New().String(),
+		ReceivedAt:   time.Now().Unix(),
+		EventType:    request.Type,
+		Payload:      request.Payload,
+		SubscriberID: request.SubscriberID,
+	}
+	return svc.notifier.Dispatch(ctx, event)
 }

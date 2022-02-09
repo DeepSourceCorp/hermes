@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/deepsourcelabs/hermes/subscription"
-	model "github.com/deepsourcelabs/hermes/subscription"
 	"github.com/go-redis/redis/v8"
 	"github.com/segmentio/ksuid"
 )
@@ -22,7 +21,7 @@ func NewSubscriptionStore(Conn *redis.Client) subscription.Repository {
 	}
 }
 
-func (store *subscriptionStore) Create(ctx context.Context, subscription *model.Subscription) (*model.Subscription, error) {
+func (store *subscriptionStore) Create(ctx context.Context, subscription *subscription.Subscription) (*subscription.Subscription, error) {
 	subscription.ID = ksuid.New().String()
 	raw, err := json.Marshal(subscription)
 	if err != nil {
@@ -61,8 +60,8 @@ func (store *subscriptionStore) Create(ctx context.Context, subscription *model.
 	return subscription, nil
 }
 
-func (store *subscriptionStore) GetByID(ctx context.Context, id string) (*model.Subscription, error) {
-	subscription := new(model.Subscription)
+func (store *subscriptionStore) GetByID(ctx context.Context, id string) (*subscription.Subscription, error) {
+	subscription := new(subscription.Subscription)
 
 	res, err := store.Conn.Get(
 		ctx,
@@ -78,8 +77,8 @@ func (store *subscriptionStore) GetByID(ctx context.Context, id string) (*model.
 	return subscription, nil
 }
 
-func (store *subscriptionStore) GetAll(ctx context.Context, subscriberID string) ([]model.Subscription, error) {
-	subscriptions := []model.Subscription{}
+func (store *subscriptionStore) GetAll(ctx context.Context, subscriberID string) ([]subscription.Subscription, error) {
+	subscriptions := []subscription.Subscription{}
 
 	key := fmt.Sprintf("subscription-list:%s", subscriberID)
 
@@ -113,7 +112,7 @@ func (store *subscriptionStore) GetAll(ctx context.Context, subscriberID string)
 			return subscriptions, err
 		}
 
-		s := new(model.Subscription)
+		s := new(subscription.Subscription)
 		if err := json.Unmarshal([]byte(res), s); err != nil {
 			return subscriptions, err
 		}
