@@ -10,8 +10,14 @@ type slackError struct {
 	isFatal    bool
 }
 
-func NewErr(statusCode int, systemCode int, msg string, internal string, isFatal bool) domain.IError {
-	return &slackError{}
+func NewErr(statusCode int, systemCode int, message string, internal string, isFatal bool) domain.IError {
+	return &slackError{
+		message:    message,
+		statusCode: statusCode,
+		systemCode: systemCode,
+		internal:   internal,
+		isFatal:    isFatal,
+	}
 }
 func (e *slackError) Message() string {
 	return e.message
