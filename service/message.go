@@ -27,17 +27,17 @@ func (service *messageService) Send(
 	for _, recipient := range request.Recipients {
 		notifier, err := service.getNotifier(ctx, recipient.Notifier)
 		if err != nil {
-			return domain.Messages{}, errUnprocessable(err.Error())
+			return domain.Messages{}, err
 		}
 
 		template, err := service.getTemplate(ctx, recipient.Template)
 		if err != nil {
-			return domain.Messages{}, nil
+			return domain.Messages{}, err
 		}
 
 		body, err := service.getBody(ctx, template, request.Payload)
 		if err != nil {
-			return []domain.Message{}, errUnprocessable(err.Error())
+			return []domain.Message{}, err
 		}
 		provider := newProvider(recipient.Notifier.Type)
 
@@ -65,6 +65,9 @@ func (service *messageService) getTemplate(
 	ctx context.Context,
 	t *domain.Template,
 ) (*domain.Template, domain.IError) {
+	if service.templateRepository == nil {
+		return nil, errStateless("templateRepository == nil")
+	}
 
 	if t.ID == "" && (t.Pattern == "" || t.Type == "") {
 		return nil, errMandatoryParamsMissing("missing pattern")

@@ -50,4 +50,7 @@ var (
 	errMinOneRecipient = func(internal string) domain.IError {
 		return NewErr(400, 40002, "at least one recipient must be defined", internal, true)
 	}
+	errStateless = func(internal string) domain.IError {
+		return NewErr(422, 40002, "template lookup is not available", internal, true)
+	}
 )

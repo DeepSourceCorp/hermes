@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+
 	handler "github.com/deepsourcelabs/hermes/interfaces/http"
 	"github.com/deepsourcelabs/hermes/service"
 	"github.com/deepsourcelabs/hermes/storage"
@@ -42,7 +44,24 @@ func StartAsHTTPServer() error {
 	return e.Start(":7272")
 }
 
+func StartInStatelessMode() error {
+	messsageService := service.NewMessageService(nil)
+	messageHandler := handler.NewMessageHandler(messsageService)
+
+	router := handler.NewStatelessRouter(messageHandler)
+
+	e := echo.New()
+	router.AddRoutes(e)
+	return e.Start(":7272")
+}
+
 func main() {
+	var isStateless = flag.Bool("stateless", true, "foobar")
+	if *isStateless {
+		if err := StartInStatelessMode(); err != nil {
+			panic(err)
+		}
+	}
 	if err := StartAsHTTPServer(); err != nil {
 		panic(err)
 	}
