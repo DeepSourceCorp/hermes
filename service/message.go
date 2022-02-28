@@ -65,7 +65,7 @@ func (service *messageService) getTemplate(
 	ctx context.Context,
 	t *domain.Template,
 ) (*domain.Template, domain.IError) {
-	if service.templateRepository == nil {
+	if service.templateRepository == nil && t.ID != "" {
 		return nil, errStateless("templateRepository == nil")
 	}
 
