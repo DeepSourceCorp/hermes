@@ -9,7 +9,7 @@
 
 [![DeepSource](https://deepsource.io/gh/deepsourcelabs/hermes.svg/?label=active+issues&show_trend=true&token=VE2zr-CLligbX0UNUPqR9lne)](https://deepsource.io/gh/deepsourcelabs/hermes/?ref=repository-badge) [![DeepSource](https://deepsource.io/gh/deepsourcelabs/hermes.svg/?label=resolved+issues&show_trend=true&token=VE2zr-CLligbX0UNUPqR9lne)](https://deepsource.io/gh/deepsourcelabs/hermes/?ref=repository-badge)
 <p>
-Single unified API for integrations/notifications.
+Unified API for notifications.
 </p>
 </div>
 
