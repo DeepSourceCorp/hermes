@@ -8,7 +8,9 @@
 <br>
 
 [![DeepSource](https://deepsource.io/gh/deepsourcelabs/hermes.svg/?label=active+issues&show_trend=true&token=VE2zr-CLligbX0UNUPqR9lne)](https://deepsource.io/gh/deepsourcelabs/hermes/?ref=repository-badge)
-  
+<p>
+Hermes is a powerful integration gateway for managing all your third party integrations in one place.
+</p>
 </div>
 
 Hermes is a simple notification/integration gateway.  Hermes abstracts away notification providers using a single unified API.  No need to wrangle dozens of SDKs and APIs to connect with Slack, MS Teams, etc.
