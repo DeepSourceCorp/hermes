@@ -8,14 +8,9 @@ import (
 )
 
 type Provider interface {
-	Send(context.Context, *domain.Notifier, string) (*domain.Message, domain.IError)
-	Validate(context.Context, *domain.NotifierConfiguration) domain.IError
+	Send(context.Context, *domain.Notifier, []byte) (*domain.Message, domain.IError)
 }
 
 type IHTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
-}
-
-type BaseProvider struct {
-	HTTPClient IHTTPClient
 }

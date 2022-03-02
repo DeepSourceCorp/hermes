@@ -8,11 +8,11 @@ type serviceError struct {
 	message    string
 	internal   string
 	statusCode int
-	systemCode int
+	systemCode string
 	isFatal    bool
 }
 
-func NewErr(statusCode int, systemCode int, message string, internal string, isFatal bool) domain.IError {
+func NewErr(statusCode int, systemCode string, message string, internal string, isFatal bool) domain.IError {
 	return &serviceError{
 		message:    message,
 		statusCode: statusCode,
@@ -33,24 +33,24 @@ func (e *serviceError) StatusCode() int {
 func (e *serviceError) Error() string {
 	return e.message
 }
-func (e *serviceError) SystemCode() int {
+func (e *serviceError) SystemCode() string {
 	return e.systemCode
 }
 
 var (
 	errMandatoryParamsMissing = func(internal string) domain.IError {
-		return NewErr(400, 40001, "mandatory params missing", internal, true)
+		return NewErr(400, "HE-40010", "mandatory params missing", internal, true)
 	}
 	errUnprocessable = func(internal string) domain.IError {
-		return NewErr(422, 40002, "unable to process the request", internal, true)
+		return NewErr(422, "HE-40020", "unable to process the request", internal, true)
 	}
 	errRecipientMalformed = func(internal string) domain.IError {
-		return NewErr(400, 40002, "some recipients are malformed", internal, true)
+		return NewErr(400, "HE-40030", "some recipients are malformed", internal, true)
 	}
 	errMinOneRecipient = func(internal string) domain.IError {
-		return NewErr(400, 40002, "at least one recipient must be defined", internal, true)
+		return NewErr(400, "HE-40040", "at least one recipient must be defined", internal, true)
 	}
 	errStateless = func(internal string) domain.IError {
-		return NewErr(422, 40002, "template lookup is not available", internal, true)
+		return NewErr(422, "HE-40050", "template lookup is not available", internal, true)
 	}
 )

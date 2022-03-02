@@ -19,5 +19,5 @@ type IError interface {
 
 	// System level error code.  These internal error codes can be
 	// sent to the user world for pin pointing the error source.
-	SystemCode() int
+	SystemCode() string
 }

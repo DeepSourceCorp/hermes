@@ -87,11 +87,11 @@ func (service *messageService) getBody(
 	ctx context.Context,
 	t *domain.Template,
 	payload *map[string]interface{},
-) (string, domain.IError) {
+) ([]byte, domain.IError) {
 	templater := t.GetTemplater()
 	body, err := templater.Execute(t.Pattern, payload)
 	if err != nil {
-		return "", errUnprocessable("template execution failed")
+		return nil, errUnprocessable("template execution failed")
 	}
 	return body, nil
 }

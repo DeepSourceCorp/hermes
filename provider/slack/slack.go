@@ -2,8 +2,7 @@ package slack
 
 import (
 	"context"
-	"errors"
-	"net/http"
+	"encoding/json"
 
 	"github.com/deepsourcelabs/hermes/domain"
 	"github.com/deepsourcelabs/hermes/provider"
@@ -11,64 +10,97 @@ import (
 	"github.com/segmentio/ksuid"
 )
 
-type providerSlack struct {
-	provider.BaseProvider
+type defaultSlack struct {
+	HTTPClient provider.IHTTPClient
 }
 
-func NewSlackProvider(httpClient *http.Client) provider.Provider {
-	return &providerSlack{
-		provider.BaseProvider{
-			HTTPClient: httpClient,
-		},
+func NewSlackProvider(httpClient provider.IHTTPClient) provider.Provider {
+	return &defaultSlack{
+		HTTPClient: httpClient,
 	}
 }
 
-type Opts struct {
-	Token   string
-	Channel string
-}
+func (p *defaultSlack) Send(ctx context.Context, notifier *domain.Notifier, body []byte) (*domain.Message, domain.IError) {
+	// Extract and validate the payload.
+	var payload = new(Payload)
+	if err := payload.Extract(body); err != nil {
+		return nil, err
+	}
+	if err := payload.Validate(); err != nil {
+		return nil, err
+	}
 
-func (p *providerSlack) Send(ctx context.Context, notifier *domain.Notifier, body string) (*domain.Message, domain.IError) {
-	opts, err := newOpts(notifier.Config)
-	if err != nil {
-		return nil, errSlackOptsParseFail(err.Error())
+	// Extract and validate the configuration.
+	var opts = new(Opts)
+	if err := opts.Extract(notifier.Config); err != nil {
+		return nil, err
+	}
+
+	if err := opts.Validate(); err != nil {
+		return nil, err
 	}
 
 	request := &postMessageRequest{
-		Channel: opts.Channel,
-		Token:   opts.Token,
-		Text:    body,
+		Channel:     opts.Channel,
+		BearerToken: opts.Secret.Token,
+		Text:        payload.Text,
+		Blocks:      payload.Blocks,
 	}
 
-	c := client{
-		httpClient: p.BaseProvider.HTTPClient,
-	}
-
-	response, err := c.SendMessage(request)
+	response, err := send(p.HTTPClient, request)
 	if err != nil {
-		return nil, errSlackErr(err.Error())
+		return nil, err
 	}
 
 	return &domain.Message{
 		ID:               ksuid.New().String(),
 		Ok:               true,
+		Payload:          payload,
 		ProviderResponse: response,
-		Body:             body,
 	}, nil
 }
 
-func newOpts(config *domain.NotifierConfiguration) (*Opts, error) {
-	var opts = new(Opts)
-	if err := mapstructure.Decode(config.Opts, opts); err != nil {
-		return nil, err
-	}
-	opts.Token = config.Secret.Token
-	if opts.Channel == "" || opts.Token == "" {
-		return nil, errors.New("error parsing slack configuration")
-	}
-	return opts, nil
+type Opts struct {
+	Secret  *domain.NotifierSecret
+	Channel string `mapstructure:"channel"`
 }
 
-func (*providerSlack) Validate(ctx context.Context, config *domain.NotifierConfiguration) domain.IError {
+func (o *Opts) Extract(c *domain.NotifierConfiguration) domain.IError {
+	if c == nil {
+		return errFailedOptsValidation("notifier config emtpy")
+	}
+	if err := mapstructure.Decode(c.Opts, o); err != nil {
+		return errFailedOptsValidation("failed to decode configuration")
+	}
+	o.Secret = c.Secret
+	return nil
+}
+
+func (o *Opts) Validate() domain.IError {
+	if o.Secret == nil || o.Secret.Token == "" {
+		return errFailedOptsValidation("secret not defined in configuration")
+	}
+	if o.Channel == "" {
+		return errFailedOptsValidation("channel is emtpy")
+	}
+	return nil
+}
+
+type Payload struct {
+	Text   string      `json:"text"`
+	Blocks interface{} `json:"blocks"`
+}
+
+func (p *Payload) Extract(body []byte) domain.IError {
+	if err := json.Unmarshal(body, p); err != nil {
+		p.Text = string(body)
+	}
+	return nil
+}
+
+func (p *Payload) Validate() domain.IError {
+	if p.Blocks == nil && p.Text == "" {
+		return errFailedBodyValidation("blocks and text is empty")
+	}
 	return nil
 }

@@ -1,17 +1,17 @@
-package slack
+package jira
 
 import "github.com/deepsourcelabs/hermes/domain"
 
-type slackError struct {
+type jiraError struct {
 	message    string
 	internal   string
-	statusCode int
 	systemCode string
+	statusCode int
 	isFatal    bool
 }
 
 func NewErr(statusCode int, systemCode string, message string, internal string, isFatal bool) domain.IError {
-	return &slackError{
+	return &jiraError{
 		message:    message,
 		statusCode: statusCode,
 		systemCode: systemCode,
@@ -19,34 +19,33 @@ func NewErr(statusCode int, systemCode string, message string, internal string, 
 		isFatal:    isFatal,
 	}
 }
-
-func (e *slackError) Message() string {
+func (e *jiraError) Message() string {
 	return e.message
 }
-func (e *slackError) IsFatal() bool {
+func (e *jiraError) IsFatal() bool {
 	return e.isFatal
 }
-func (e *slackError) StatusCode() int {
+func (e *jiraError) StatusCode() int {
 	return e.statusCode
 }
-func (e *slackError) Error() string {
+func (e *jiraError) Error() string {
 	return e.internal
 }
-func (e *slackError) SystemCode() string {
+func (e *jiraError) SystemCode() string {
 	return e.systemCode
 }
 
 var (
 	errFailedOptsValidation = func(internal string) domain.IError {
-		return NewErr(422, "ERR-SLK-40001", "unsupported notifier config", internal, true)
+		return NewErr(422, "ERR-JIR-40001", "unsupported notifier config", internal, true)
 	}
 	errFailedBodyValidation = func(internal string) domain.IError {
-		return NewErr(422, "ERR-SLK-40001", "template incompatible for provider", internal, true)
+		return NewErr(422, "ERR-JIR-40001", "template incompatible for provider", internal, true)
 	}
 	errFailedSendTemporary = func(internal string) domain.IError {
-		return NewErr(500, "ERR-SLK-50010", "failed to create issue", internal, false)
+		return NewErr(500, "ERR-JIR-50010", "failed to create issue", internal, false)
 	}
 	errFailedSendPermanent = func(internal string) domain.IError {
-		return NewErr(500, "ERR-SLK-50020", "failed to create issue", internal, true)
+		return NewErr(500, "ERR-JIR-50020", "failed to create issue", internal, true)
 	}
 )

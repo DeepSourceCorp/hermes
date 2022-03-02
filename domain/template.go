@@ -38,7 +38,7 @@ type TemplateRepository interface {
 }
 
 type Templater interface {
-	Execute(pattern string, params interface{}) (string, error)
+	Execute(pattern string, params interface{}) ([]byte, error)
 }
 
 func (t *Template) GetTemplater() Templater {
@@ -51,6 +51,7 @@ func (t *Template) GetTemplater() Templater {
 
 type mustacheTemplater struct{}
 
-func (t *mustacheTemplater) Execute(pattern string, params interface{}) (string, error) {
-	return mustache.Render(pattern, params), nil
+func (t *mustacheTemplater) Execute(pattern string, params interface{}) ([]byte, error) {
+	str := mustache.Render(pattern, params)
+	return []byte(str), nil
 }

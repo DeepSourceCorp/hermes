@@ -1,4 +1,4 @@
-package slack
+package jira
 
 import (
 	"bytes"
@@ -11,28 +11,44 @@ import (
 	"github.com/deepsourcelabs/hermes/provider"
 )
 
-const postMessageURL = "https://slack.com/api/chat.postMessage"
+const postIssueURL = "https://api.atlassian.com/ex/jira/%s/rest/api/3/issue"
 
-type postMessageRequest struct {
-	Channel     string      `json:"channel"`
-	Blocks      interface{} `json:"blocks,omitempty"`
-	Text        string      `json:"text,omitempty"`
-	BearerToken string      `json:"-"`
+type project struct {
+	Key string `json:"key"`
 }
 
-type postMessageResponse struct {
-	Ok bool `json:"ok"`
+type issueType struct {
+	Name string `json:"name"`
 }
 
-func send(httpClient provider.IHTTPClient, request *postMessageRequest) (interface{}, domain.IError) {
+type fields struct {
+	Project     project                `json:"project"`
+	IssueType   issueType              `json:"issuetype"`
+	Summary     string                 `json:"summary"`
+	Description map[string]interface{} `json:"description"`
+}
+
+type postIssueRequest struct {
+	Fields      fields `json:"fields"`
+	CloudID     string `json:"-"`
+	BearerToken string `json:"-"`
+}
+
+type postIssueResponse struct {
+	ID   string `json:"id"`
+	Key  string `json:"key"`
+	Self string `json:"self"`
+}
+
+func send(httpClient provider.IHTTPClient, request *postIssueRequest) (interface{}, domain.IError) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(request); err != nil {
 		return nil, errFailedSendPermanent("failed to encode request")
 	}
 
-	req, err := http.NewRequest("POST", postMessageURL, &buf)
+	req, err := http.NewRequest("POST", fmt.Sprintf(postIssueURL, request.CloudID), &buf)
 	if err != nil {
-		return nil, errFailedSendPermanent("failed to send request")
+		return nil, errFailedSendTemporary("failed to send request")
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", request.BearerToken))
@@ -40,13 +56,13 @@ func send(httpClient provider.IHTTPClient, request *postMessageRequest) (interfa
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return nil, errFailedSendTemporary("something went wrong while sending messsage to slack")
+		return nil, errFailedSendTemporary("something went wrong while creating the issue")
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 399 {
 		return nil, handleHTTPFailure(resp)
 	}
 
-	var response = new(postMessageResponse)
+	var response = new(postIssueResponse)
 	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
 		return nil, errFailedSendPermanent("success but failed to parse response body")
 	}
