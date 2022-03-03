@@ -21,21 +21,11 @@ func StartAsHTTPServer() error {
 	templateService := service.NewTemplateService(templateStore)
 	templateHandler := handler.NewTemplateHandler(templateService)
 
-	subscriptionStore := storage.NewSubscriptionStore(db)
-	subscriptionService := service.NewSubscriptionService(subscriptionStore)
-	subscriptionHandler := handler.NewSubscriptionHandler(subscriptionService)
-
-	notifierStore := storage.NewNotifierStore(db)
-	notiferService := service.NewNotifierService(notifierStore)
-	notifierHandler := handler.NewNotiferHandler(notiferService)
-
 	messsageService := service.NewMessageService(templateStore)
 	messageHandler := handler.NewMessageHandler(messsageService)
 
 	router := handler.NewRouter(
 		templateHandler,
-		subscriptionHandler,
-		notifierHandler,
 		messageHandler,
 	)
 

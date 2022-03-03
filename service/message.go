@@ -6,6 +6,7 @@ import (
 
 	"github.com/deepsourcelabs/hermes/domain"
 	"github.com/deepsourcelabs/hermes/provider"
+	"github.com/deepsourcelabs/hermes/provider/jira"
 	"github.com/deepsourcelabs/hermes/provider/slack"
 )
 
@@ -84,9 +85,7 @@ func (service *messageService) getTemplate(
 }
 
 func (service *messageService) getBody(
-	ctx context.Context,
-	t *domain.Template,
-	payload *map[string]interface{},
+	ctx context.Context, t *domain.Template, payload *map[string]interface{},
 ) ([]byte, domain.IError) {
 	templater := t.GetTemplater()
 	body, err := templater.Execute(t.Pattern, payload)
@@ -98,8 +97,11 @@ func (service *messageService) getBody(
 
 func newProvider(providerType domain.ProviderType) provider.Provider {
 	switch providerType {
-	case domain.ProviderTypeSlack:
+	case slack.ProviderType:
 		return slack.NewSlackProvider(http.DefaultClient)
+	case jira.ProviderType:
+		return jira.NewJIRAProvider(http.DefaultClient)
+
 	}
 	return nil
 }

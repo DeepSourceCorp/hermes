@@ -9,38 +9,23 @@ type EchoRouter interface {
 }
 
 type router struct {
-	templateHandler      TemplateHandler
-	sunbscriptionHandler SubscriptionHandler
-	notifierHandler      NotiferHandler
-	messageHandler       MessageHandler
+	templateHandler TemplateHandler
+	messageHandler  MessageHandler
 }
 
 func NewRouter(
 	templateHandler TemplateHandler,
-	subscriptionHandler SubscriptionHandler,
-	notifierHandler NotiferHandler,
 	messagemessageHandler MessageHandler,
 ) EchoRouter {
 	return &router{
-		templateHandler:      templateHandler,
-		sunbscriptionHandler: subscriptionHandler,
-		notifierHandler:      notifierHandler,
-		messageHandler:       messagemessageHandler,
+		templateHandler: templateHandler,
+		messageHandler:  messagemessageHandler,
 	}
 }
 
 func (r *router) AddRoutes(e *echo.Echo) {
-
 	//templates
 	e.POST("/templates", r.templateHandler.PostTemplate())
-
-	//subscriptions
-	e.POST("/tenants/:tenant_id/subscriptions", r.sunbscriptionHandler.PostSubscription())
-
-	//notifiers
-	e.POST("/tenants/:tenant_id/notifiers", r.notifierHandler.PostNotifier())
-	e.GET("tenants/:tenant_id/notifiers/:id", r.notifierHandler.GetNotifier())
-
 	e.POST("/tenants/:tenant_id/messages", r.messageHandler.PostMessage())
 }
 

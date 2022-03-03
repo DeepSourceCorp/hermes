@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"context"
 	"time"
 )
 
@@ -23,10 +22,4 @@ type Notifier struct {
 	Type        ProviderType           `json:"type"`
 }
 
-type NotifierRepository interface {
-	Create(ctx context.Context, notifier *Notifier) error
-	Update(ctx context.Context, notifier *Notifier) error
-	Delete(ctx context.Context, id string) error
-	GetByID(ctx context.Context, tenantID, id string) (*Notifier, error)
-	GetAll(ctx context.Context, tenantID string) ([]Notifier, error)
-}
+type NotifierRepository interface{}
