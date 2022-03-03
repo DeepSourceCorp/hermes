@@ -13,18 +13,22 @@ import (
 
 const postMessageURL = "https://slack.com/api/chat.postMessage"
 
-type postMessageRequest struct {
+type Client struct {
+	HTTPClient provider.IHTTPClient
+}
+
+type SendMessageRequest struct {
 	Channel     string      `json:"channel"`
 	Blocks      interface{} `json:"blocks,omitempty"`
 	Text        string      `json:"text,omitempty"`
 	BearerToken string      `json:"-"`
 }
 
-type postMessageResponse struct {
+type SendMessageResponse struct {
 	Ok bool `json:"ok"`
 }
 
-func send(httpClient provider.IHTTPClient, request *postMessageRequest) (interface{}, domain.IError) {
+func (c *Client) SendMessage(request *SendMessageRequest) (interface{}, domain.IError) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(request); err != nil {
 		return nil, errFailedSendPermanent("failed to encode request")
@@ -38,7 +42,7 @@ func send(httpClient provider.IHTTPClient, request *postMessageRequest) (interfa
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", request.BearerToken))
 	req.Header.Add("Content-Type", "application/json; charset=utf-8")
 
-	resp, err := httpClient.Do(req)
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, errFailedSendTemporary("something went wrong while sending messsage to slack")
 	}
@@ -46,7 +50,7 @@ func send(httpClient provider.IHTTPClient, request *postMessageRequest) (interfa
 		return nil, handleHTTPFailure(resp)
 	}
 
-	var response = new(postMessageResponse)
+	var response = new(SendMessageResponse)
 	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
 		return nil, errFailedSendPermanent("success but failed to parse response body")
 	}

@@ -11,12 +11,14 @@ import (
 )
 
 type defaultSlack struct {
-	HTTPClient provider.IHTTPClient
+	Client *Client
 }
+
+const ProviderType = domain.ProviderType("slack")
 
 func NewSlackProvider(httpClient provider.IHTTPClient) provider.Provider {
 	return &defaultSlack{
-		HTTPClient: httpClient,
+		Client: &Client{HTTPClient: httpClient},
 	}
 }
 
@@ -40,14 +42,14 @@ func (p *defaultSlack) Send(ctx context.Context, notifier *domain.Notifier, body
 		return nil, err
 	}
 
-	request := &postMessageRequest{
+	request := &SendMessageRequest{
 		Channel:     opts.Channel,
 		BearerToken: opts.Secret.Token,
 		Text:        payload.Text,
 		Blocks:      payload.Blocks,
 	}
 
-	response, err := send(p.HTTPClient, request)
+	response, err := p.Client.SendMessage(request)
 	if err != nil {
 		return nil, err
 	}

@@ -42,10 +42,10 @@ var (
 	errFailedBodyValidation = func(internal string) domain.IError {
 		return NewErr(422, "ERR-JIR-40001", "template incompatible for provider", internal, true)
 	}
-	errFailedSendTemporary = func(internal string) domain.IError {
+	errFailedTemporary = func(internal string) domain.IError {
 		return NewErr(500, "ERR-JIR-50010", "failed to create issue", internal, false)
 	}
-	errFailedSendPermanent = func(internal string) domain.IError {
+	errFailedPermenant = func(internal string) domain.IError {
 		return NewErr(500, "ERR-JIR-50020", "failed to create issue", internal, true)
 	}
 )

@@ -267,7 +267,7 @@ func Test_jiraSimple_Send(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &jiraSimple{
-				httpClient: tt.fields.httpClient,
+				Client: &Client{HTTPClient: tt.fields.httpClient},
 			}
 			got, err := p.Send(tt.args.ctx, tt.args.notifier, tt.args.body)
 			if tt.wantErr == false {

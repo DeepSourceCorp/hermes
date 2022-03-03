@@ -12,12 +12,14 @@ import (
 )
 
 type jiraSimple struct {
-	httpClient provider.IHTTPClient
+	Client *Client
 }
+
+const ProviderType = domain.ProviderType("jira")
 
 func NewJIRAProvider(httpClient *http.Client) provider.Provider {
 	return &jiraSimple{
-		httpClient: httpClient,
+		Client: &Client{HTTPClient: httpClient},
 	}
 }
 
@@ -41,18 +43,18 @@ func (p *jiraSimple) Send(ctx context.Context, notifier *domain.Notifier, body [
 		return nil, err
 	}
 
-	request := &postIssueRequest{
-		Fields: fields{
-			Project:     project{Key: opts.ProjectKey},
-			IssueType:   issueType{Name: opts.IssueType},
+	request := &CreateIssueRequest{
+		Fields: Fields{
+			Project:     Project{Key: opts.ProjectKey},
+			IssueType:   IssueType{Name: opts.IssueType},
 			Summary:     payload.Summary,
 			Description: payload.Description,
 		},
-		CloudID:     "--todo---",
+		CloudID:     opts.CloudID,
 		BearerToken: opts.Secret.Token,
 	}
 
-	response, err := send(p.httpClient, request)
+	response, err := p.Client.CreateIssue(request)
 	if err != nil {
 		return nil, err
 	}
@@ -100,6 +102,7 @@ type Opts struct {
 	Secret     *domain.NotifierSecret
 	ProjectKey string `mapstructure:"project_key"`
 	IssueType  string `mapstructure:"issue_type"`
+	CloudID    string `mapstructure:"cloud_id"`
 }
 
 func (o *Opts) Extract(c *domain.NotifierConfiguration) domain.IError {
