@@ -2,7 +2,7 @@ package storage
 
 import "github.com/deepsourcelabs/hermes/domain"
 
-type storageError struct {
+type sqlError struct {
 	message    string
 	internal   string
 	statusCode int
@@ -11,7 +11,7 @@ type storageError struct {
 }
 
 func NewErr(statusCode int, systemCode string, message string, internal string, isFatal bool) domain.IError {
-	return &storageError{
+	return &sqlError{
 		message:    message,
 		statusCode: statusCode,
 		systemCode: systemCode,
@@ -19,19 +19,19 @@ func NewErr(statusCode int, systemCode string, message string, internal string, 
 		isFatal:    isFatal,
 	}
 }
-func (e *storageError) Message() string {
+func (e *sqlError) Message() string {
 	return e.message
 }
-func (e *storageError) IsFatal() bool {
+func (e *sqlError) IsFatal() bool {
 	return e.isFatal
 }
-func (e *storageError) StatusCode() int {
+func (e *sqlError) StatusCode() int {
 	return e.statusCode
 }
-func (e *storageError) Error() string {
+func (e *sqlError) Error() string {
 	return e.internal
 }
-func (e *storageError) SystemCode() string {
+func (e *sqlError) SystemCode() string {
 	return e.systemCode
 }
 
