@@ -22,7 +22,7 @@ func NewSlackProvider(httpClient provider.IHTTPClient) provider.Provider {
 	}
 }
 
-func (p *defaultSlack) Send(ctx context.Context, notifier *domain.Notifier, body []byte) (*domain.Message, domain.IError) {
+func (p *defaultSlack) Send(_ context.Context, notifier *domain.Notifier, body []byte) (*domain.Message, domain.IError) {
 	// Extract and validate the payload.
 	var payload = new(Payload)
 	if err := payload.Extract(body); err != nil {

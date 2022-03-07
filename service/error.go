@@ -12,7 +12,7 @@ type serviceError struct {
 	isFatal    bool
 }
 
-func NewErr(statusCode int, systemCode string, message string, internal string, isFatal bool) domain.IError {
+func NewErr(statusCode int, systemCode, message, internal string, isFatal bool) domain.IError {
 	return &serviceError{
 		message:    message,
 		statusCode: statusCode,

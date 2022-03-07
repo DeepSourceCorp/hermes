@@ -23,7 +23,7 @@ func NewJIRAProvider(httpClient *http.Client) provider.Provider {
 	}
 }
 
-func (p *jiraSimple) Send(ctx context.Context, notifier *domain.Notifier, body []byte) (*domain.Message, domain.IError) {
+func (p *jiraSimple) Send(_ context.Context, notifier *domain.Notifier, body []byte) (*domain.Message, domain.IError) {
 	// Extract and validate the payload.
 	var payload = new(Payload)
 	if err := payload.Extract(body); err != nil {

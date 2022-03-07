@@ -51,7 +51,7 @@ func (t *Template) GetTemplater() Templater {
 
 type mustacheTemplater struct{}
 
-func (t *mustacheTemplater) Execute(pattern string, params interface{}) ([]byte, error) {
+func (*mustacheTemplater) Execute(pattern string, params interface{}) ([]byte, error) {
 	str := mustache.Render(pattern, params)
 	return []byte(str), nil
 }

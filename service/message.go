@@ -52,8 +52,8 @@ func (service *messageService) Send(
 	return messages, nil
 }
 
-func (service *messageService) getNotifier(
-	ctx context.Context,
+func (*messageService) getNotifier(
+	_ context.Context,
 	n *domain.Notifier,
 ) (*domain.Notifier, domain.IError) {
 	if n.ID == "" && n.Config == nil {
@@ -84,8 +84,8 @@ func (service *messageService) getTemplate(
 	}, nil
 }
 
-func (service *messageService) getBody(
-	ctx context.Context, t *domain.Template, payload *map[string]interface{},
+func (*messageService) getBody(
+	_ context.Context, t *domain.Template, payload *map[string]interface{},
 ) ([]byte, domain.IError) {
 	templater := t.GetTemplater()
 	body, err := templater.Execute(t.Pattern, payload)

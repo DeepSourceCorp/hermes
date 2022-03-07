@@ -15,7 +15,7 @@ import (
 
 type mockHttp struct{}
 
-func (c *mockHttp) Do(request *http.Request) (*http.Response, error) {
+func (*mockHttp) Do(_ *http.Request) (*http.Response, error) {
 	return &http.Response{
 		Body:       io.NopCloser(bytes.NewReader([]byte("{\"ok\":true}"))),
 		StatusCode: http.StatusOK,
@@ -24,7 +24,7 @@ func (c *mockHttp) Do(request *http.Request) (*http.Response, error) {
 
 type errHTTP struct{}
 
-func (c *errHTTP) Do(request *http.Request) (*http.Response, error) {
+func (*errHTTP) Do(_ *http.Request) (*http.Response, error) {
 	return nil, errors.New("test")
 }
 
