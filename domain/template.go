@@ -1,7 +1,9 @@
 package domain
 
 import (
+	"bytes"
 	"context"
+	"text/template"
 	"time"
 
 	"github.com/hoisie/mustache"
@@ -10,8 +12,9 @@ import (
 type TemplateType string
 
 const (
-	TemplateTypeText     TemplateType = "text"
-	TemplateTypeMustache TemplateType = "mustache"
+	TemplateTypeText       TemplateType = "text"
+	TemplateTypeMustache   TemplateType = "mustache"
+	TemplateTypeGoTemplate TemplateType = "gotmpl"
 )
 
 type Template struct {
@@ -45,13 +48,31 @@ func (t *Template) GetTemplater() Templater {
 	switch t.Type {
 	case TemplateTypeMustache:
 		return &mustacheTemplater{}
+	case TemplateTypeGoTemplate:
+		return &goTemplater{}
 	}
 	return nil
 }
 
 type mustacheTemplater struct{}
+type goTemplater struct{}
 
 func (*mustacheTemplater) Execute(pattern string, params interface{}) ([]byte, error) {
 	str := mustache.Render(pattern, params)
 	return []byte(str), nil
+}
+
+func (*goTemplater) Execute(pattern string, params interface{}) ([]byte, error) {
+	tmpl, err := template.New("template").Parse(pattern)
+	if err != nil {
+		return nil, err
+	}
+
+	var b bytes.Buffer
+	err = tmpl.Execute(&b, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return b.Bytes(), nil
 }
