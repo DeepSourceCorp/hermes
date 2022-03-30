@@ -96,8 +96,7 @@ type Payload struct {
 
 func (p *Payload) Extract(body []byte) domain.IError {
 	if err := json.Unmarshal(body, p); err != nil {
-		body := string(body)
-		p.Description = strings.TrimSuffix(body, "\n")
+		p.Description = strings.TrimSuffix(string(body), "\n")
 	}
 	return nil
 }
