@@ -56,7 +56,7 @@ func (c *Client) SendMessage(request *SendMessageRequest) (interface{}, domain.I
 	t := template.Must(template.New("json").Parse(queryTemplate))
 	buf := &bytes.Buffer{}
 	if err := t.Execute(buf, queryData); err != nil {
-		return "", errFailedSendPermanent("failed to encode request")
+		return nil, errFailedSendPermanent("failed to encode request")
 	}
 
 	query := map[string]string{
@@ -65,7 +65,7 @@ func (c *Client) SendMessage(request *SendMessageRequest) (interface{}, domain.I
 
 	b, err := json.Marshal(query)
 	if err != nil {
-		return "", errFailedSendPermanent("failed to encode request")
+		return nil, errFailedSendPermanent("failed to encode request")
 	}
 
 	req, err := http.NewRequest("POST", postMessageURL, bytes.NewBuffer(b))
@@ -78,7 +78,7 @@ func (c *Client) SendMessage(request *SendMessageRequest) (interface{}, domain.I
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return nil, errFailedSendTemporary("something went wrong while sending messsage to slack")
+		return nil, errFailedSendTemporary("something went wrong while sending messsage to linear")
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 399 {
 		return nil, handleHTTPFailure(resp)
