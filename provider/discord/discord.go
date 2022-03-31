@@ -43,7 +43,6 @@ func (p *defaultDiscord) Send(_ context.Context, notifier *domain.Notifier, body
 	}
 
 	request := &SendMessageRequest{
-		Username:   payload.Username,
 		Content:    payload.Content,
 		WebhookURI: opts.WebhookURI,
 	}
@@ -62,8 +61,7 @@ func (p *defaultDiscord) Send(_ context.Context, notifier *domain.Notifier, body
 }
 
 type Payload struct {
-	Username string `json:"username"`
-	Content  string `json:"content"`
+	Content string `json:"content"`
 }
 
 func (p *Payload) Extract(body []byte) domain.IError {
@@ -74,8 +72,8 @@ func (p *Payload) Extract(body []byte) domain.IError {
 }
 
 func (p *Payload) Validate() domain.IError {
-	if p.Content == "" && p.Username == "" {
-		return errFailedBodyValidation("blocks and text is empty")
+	if p.Content == "" {
+		return errFailedBodyValidation("content is empty")
 	}
 	return nil
 }
