@@ -35,6 +35,7 @@ Hermes aims to support multiple templating frameworks including:
 - JIRA (✓)
 - Linear
 - Trello
+- GitHub Issues (✓)
 
 ...and many more.
 
