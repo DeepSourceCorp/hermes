@@ -107,7 +107,7 @@ type Opts struct {
 
 func (o *Opts) Extract(c *domain.NotifierConfiguration) domain.IError {
 	if c == nil {
-		return errFailedOptsValidation("notifier config emtpy")
+		return errFailedOptsValidation("notifier config empty")
 	}
 	if err := mapstructure.Decode(c.Opts, o); err != nil {
 		return errFailedOptsValidation("failed to decode configuration")
@@ -123,7 +123,7 @@ func (o *Opts) Validate() domain.IError {
 		return errFailedOptsValidation("options empty")
 	}
 	if o.IssueType == "" || o.ProjectKey == "" {
-		return errFailedOptsValidation("issue_type or project_key is emtpy")
+		return errFailedOptsValidation("issue_type or project_key is empty")
 	}
 
 	if o.Secret == nil || o.Secret.Token == "" {

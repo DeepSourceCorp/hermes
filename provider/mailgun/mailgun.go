@@ -1,4 +1,4 @@
-package slack
+package mailgun
 
 import (
 	"context"
@@ -10,19 +10,19 @@ import (
 	"github.com/segmentio/ksuid"
 )
 
-type defaultSlack struct {
+type defaultMailgun struct {
 	Client *Client
 }
 
-const ProviderType = domain.ProviderType("slack")
+const ProviderType = domain.ProviderType("mailgun")
 
-func NewSlackProvider(httpClient provider.IHTTPClient) provider.Provider {
-	return &defaultSlack{
+func NewMailgunProvider(httpClient provider.IHTTPClient) provider.Provider {
+	return &defaultMailgun{
 		Client: &Client{HTTPClient: httpClient},
 	}
 }
 
-func (p *defaultSlack) Send(_ context.Context, notifier *domain.Notifier, body []byte) (*domain.Message, domain.IError) {
+func (p *defaultMailgun) Send(_ context.Context, notifier *domain.Notifier, body []byte) (*domain.Message, domain.IError) {
 	// Extract and validate the payload.
 	var payload = new(Payload)
 	if err := payload.Extract(body); err != nil {
@@ -43,10 +43,12 @@ func (p *defaultSlack) Send(_ context.Context, notifier *domain.Notifier, body [
 	}
 
 	request := &SendMessageRequest{
-		Channel:     opts.Channel,
-		BearerToken: opts.Secret.Token,
-		Text:        payload.Text,
-		Blocks:      payload.Blocks,
+		From:       opts.From,
+		To:         opts.To,
+		Subject:    opts.Subject,
+		Text:       payload.Text,
+		Token:      opts.Secret.Token,
+		DomainName: opts.DomainName,
 	}
 
 	response, err := p.Client.SendMessage(request)
@@ -63,8 +65,11 @@ func (p *defaultSlack) Send(_ context.Context, notifier *domain.Notifier, body [
 }
 
 type Opts struct {
-	Secret  *domain.NotifierSecret
-	Channel string `mapstructure:"channel"`
+	Secret     *domain.NotifierSecret
+	From       string `mapstructure:"from"`
+	To         string `mapstructure:"to"`
+	Subject    string `mapstructure:"subject"`
+	DomainName string `mapstructure:"domain"`
 }
 
 func (o *Opts) Extract(c *domain.NotifierConfiguration) domain.IError {
@@ -82,15 +87,21 @@ func (o *Opts) Validate() domain.IError {
 	if o.Secret == nil || o.Secret.Token == "" {
 		return errFailedOptsValidation("secret not defined in configuration")
 	}
-	if o.Channel == "" {
-		return errFailedOptsValidation("channel is empty")
+	if o.From == "" || o.To == "" {
+		return errFailedOptsValidation("sender and receipient details is empty")
 	}
+	if o.Subject == "" {
+		return errFailedOptsValidation("subject is empty")
+	}
+	if o.DomainName == "" {
+		return errFailedOptsValidation("domain is empty")
+	}
+
 	return nil
 }
 
 type Payload struct {
-	Text   string      `json:"text"`
-	Blocks interface{} `json:"blocks"`
+	Text string `json:"text"`
 }
 
 func (p *Payload) Extract(body []byte) domain.IError {
@@ -101,8 +112,8 @@ func (p *Payload) Extract(body []byte) domain.IError {
 }
 
 func (p *Payload) Validate() domain.IError {
-	if p.Blocks == nil && p.Text == "" {
-		return errFailedBodyValidation("blocks and text is empty")
+	if p.Text == "" {
+		return errFailedBodyValidation("text is empty")
 	}
 	return nil
 }
