@@ -27,6 +27,16 @@ func (*errHTTP) Do(_ *http.Request) (*http.Response, error) {
 	return nil, errors.New("test")
 }
 
+type statusHTTP struct{}
+
+func (*statusHTTP) Do(_ *http.Request) (*http.Response, error) {
+	r := &http.Response{
+		Body:       io.NopCloser(bytes.NewReader([]byte("{\"ok\":true}"))),
+		StatusCode: http.StatusServiceUnavailable,
+	}
+	return r, nil
+}
+
 func TestMailgunSend(t *testing.T) {
 
 	type fields struct {
@@ -247,6 +257,25 @@ func TestMailgunSend(t *testing.T) {
 			name: "http errors",
 			fields: fields{
 				httpClient: new(errHTTP),
+			},
+			args: args{
+				ctx: context.Background(),
+				notifier: &domain.Notifier{
+					Config: &domain.NotifierConfiguration{
+						Secret: &domain.NotifierSecret{Token: "token"},
+						Opts: map[string]interface{}{
+							"from": "mailgun@domain.com", "to": "apollo@deepsource.io", "subject": "Apollo + Mailgun", "domain": "secret",
+						},
+					},
+				},
+				body: []byte(`{"text": "Hi Apollo!"}`),
+			},
+			wantErr: true,
+		},
+		{
+			name: "http failure",
+			fields: fields{
+				httpClient: new(statusHTTP),
 			},
 			args: args{
 				ctx: context.Background(),
