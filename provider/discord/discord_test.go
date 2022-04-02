@@ -184,3 +184,14 @@ func TestOpts_Extract(t *testing.T) {
 	err = got.Extract(nil)
 	assert.NotNil(t, err)
 }
+
+func TestHTTPFailure(t *testing.T) {
+	r := &http.Response{
+		Body:       io.NopCloser(bytes.NewReader([]byte("test"))),
+		StatusCode: http.StatusServiceUnavailable,
+	}
+
+	err := handleHTTPFailure(r)
+	assert.NotNil(t, err)
+	assert.Equal(t, err.SystemCode(), "ERR-DIS-50020")
+}
