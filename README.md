@@ -17,7 +17,7 @@ Hermes provides a single unified API for notifications.
 
 Hermes aims to support multiple templating frameworks including:
 - Mustache templates (✓)
-- Go Templates
+- Go Templates (✓)
 - Django Templates
 - MJML
 
@@ -27,7 +27,7 @@ Hermes aims to support multiple templating frameworks including:
 - Slack (✓)
 - Microsoft Teams
 - Google Chat
-- Discord
+- Discord (✓)
 
 ...and many more.
 
