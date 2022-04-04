@@ -1,0 +1,7 @@
+---
+templates:
+- id: test
+  path: "./test.txt"
+  type: mustache
+  supported_providers:
+  - slack
