@@ -7,6 +7,7 @@ import (
 	"github.com/deepsourcelabs/hermes/domain"
 	"github.com/deepsourcelabs/hermes/provider"
 	"github.com/deepsourcelabs/hermes/provider/jira"
+	"github.com/deepsourcelabs/hermes/provider/mailgun"
 	"github.com/deepsourcelabs/hermes/provider/slack"
 )
 
@@ -101,7 +102,8 @@ func newProvider(providerType domain.ProviderType) provider.Provider {
 		return slack.NewSlackProvider(http.DefaultClient)
 	case jira.ProviderType:
 		return jira.NewJIRAProvider(http.DefaultClient)
-
+	case mailgun.ProviderType:
+		return mailgun.NewMailgunProvider(http.DefaultClient)
 	}
 	return nil
 }
