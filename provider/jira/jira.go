@@ -67,6 +67,10 @@ func (p *jiraSimple) Send(_ context.Context, notifier *domain.Notifier, body []b
 	}, nil
 }
 
+func (p *jiraSimple) GetOptValues(context.Context, *domain.NotifierSecret) (*map[string]interface{}, error) {
+	return &map[string]interface{}{}, nil
+}
+
 // Payload defines the primary content payload for the JIRA provider.
 type Payload struct {
 	Summary     string                 `json:"summary"`

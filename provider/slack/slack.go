@@ -106,3 +106,23 @@ func (p *Payload) Validate() domain.IError {
 	}
 	return nil
 }
+
+func (p *defaultSlack) GetOptValues(_ context.Context, secret *domain.NotifierSecret) (*map[string]interface{}, error) {
+	request := &GetChannelsRequest{
+		BearerToken: secret.Token,
+	}
+	response, err := p.Client.GetChannels(request)
+	if err != nil {
+		return nil, err
+	}
+
+	channels := []map[string]string{}
+
+	for _, v := range response.Channels {
+		channels = append(channels, map[string]string{
+			"id":   v.ID,
+			"name": v.Name,
+		})
+	}
+	return &map[string]interface{}{"channel": channels}, nil
+}

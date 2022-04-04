@@ -2,13 +2,13 @@ package service
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/deepsourcelabs/hermes/domain"
-	"github.com/deepsourcelabs/hermes/provider"
-	"github.com/deepsourcelabs/hermes/provider/jira"
-	"github.com/deepsourcelabs/hermes/provider/slack"
 )
+
+type MessageService interface {
+	Send(ctx context.Context, request *SendMessageRequest) (domain.Messages, domain.IError)
+}
 
 type messageService struct {
 	templateRepository domain.TemplateRepository
@@ -18,6 +18,30 @@ func NewMessageService(templateRepository domain.TemplateRepository) MessageServ
 	return &messageService{
 		templateRepository: templateRepository,
 	}
+}
+
+type SendMessageRequest struct {
+	TenantID   string                  `param:"tenant_id"`
+	Payload    *map[string]interface{} `json:"payload"`
+	Recipients []struct {
+		Notifier *domain.Notifier `json:"notifier"`
+		Template *domain.Template `json:"template"`
+	} `json:"recipients"`
+}
+
+func (r *SendMessageRequest) Validate() domain.IError {
+	if r.Payload == nil {
+		return errMandatoryParamsMissing("empty payload")
+	}
+	if len(r.Recipients) < 1 {
+		return errMinOneRecipient("no recipients defined")
+	}
+	for _, v := range r.Recipients {
+		if v.Notifier == nil || v.Template == nil {
+			return errRecipientMalformed("some recipients are not valid")
+		}
+	}
+	return nil
 }
 
 func (service *messageService) Send(
@@ -93,15 +117,4 @@ func (*messageService) getBody(
 		return nil, errUnprocessable("template execution failed")
 	}
 	return body, nil
-}
-
-func newProvider(providerType domain.ProviderType) provider.Provider {
-	switch providerType {
-	case slack.ProviderType:
-		return slack.NewSlackProvider(http.DefaultClient)
-	case jira.ProviderType:
-		return jira.NewJIRAProvider(http.DefaultClient)
-
-	}
-	return nil
 }
