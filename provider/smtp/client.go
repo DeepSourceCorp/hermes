@@ -26,7 +26,7 @@ type SendMessageResponse struct {
 	Ok bool `json:"ok"`
 }
 
-func (c *Client) SendMessage(request *SendMessageRequest) (interface{}, domain.IError) {
+func (*Client) SendMessage(request *SendMessageRequest) (interface{}, domain.IError) {
 	from := request.FromEmail
 	password := request.FromPassword
 	to := request.ToEmail
@@ -42,7 +42,7 @@ func (c *Client) SendMessage(request *SendMessageRequest) (interface{}, domain.I
 	smtpMessage := ""
 	smtpMessage += "From: " + from + "\n"
 	smtpMessage += "To: " + toHeader + "\n"
-	smtpMessage += "Subject: " + subject + "\n"
+	smtpMessage += "Subject: " + subject + "\n\n"
 	smtpMessage += message
 
 	resp := new(SendMessageResponse)

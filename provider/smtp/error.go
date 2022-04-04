@@ -46,7 +46,4 @@ var (
 	errFailedSendTemporary = func(internal string) domain.IError {
 		return NewErr(500, "ERR-SMT-50010", "failed to send mail", internal, false)
 	}
-	errFailedSendPermanent = func(internal string) domain.IError {
-		return NewErr(500, "ERR-SMT-50020", "failed to send mail", internal, true)
-	}
 )
