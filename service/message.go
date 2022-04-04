@@ -8,6 +8,7 @@ import (
 	"github.com/deepsourcelabs/hermes/provider"
 	"github.com/deepsourcelabs/hermes/provider/jira"
 	"github.com/deepsourcelabs/hermes/provider/slack"
+	"github.com/deepsourcelabs/hermes/provider/smtp"
 )
 
 type messageService struct {
@@ -101,6 +102,8 @@ func newProvider(providerType domain.ProviderType) provider.Provider {
 		return slack.NewSlackProvider(http.DefaultClient)
 	case jira.ProviderType:
 		return jira.NewJIRAProvider(http.DefaultClient)
+	case smtp.ProviderType:
+		return smtp.NewSMTPProvider(http.DefaultClient)
 
 	}
 	return nil
