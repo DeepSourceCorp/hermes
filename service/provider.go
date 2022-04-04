@@ -15,8 +15,8 @@ type ProviderService interface {
 }
 
 type GetProviderReqeuest struct {
-	Secret *domain.NotifierSecret `json:"secret"`
-	Type   domain.ProviderType    `param:"provider"`
+	Token string              `header:"X-Notifier-Token"`
+	Type  domain.ProviderType `param:"provider"`
 }
 
 type GetProviderResponse struct {
@@ -32,7 +32,7 @@ func NewProviderService() ProviderService {
 
 func (service *providerService) GetProvider(ctx context.Context, request *GetProviderReqeuest) (*GetProviderResponse, domain.IError) {
 	provider := newProvider(request.Type)
-	response, err := provider.GetOptValues(ctx, request.Secret)
+	response, err := provider.GetOptValues(ctx, &domain.NotifierSecret{Token: request.Token})
 	if err != nil {
 		return nil, errUnprocessable(err.Error())
 	}
