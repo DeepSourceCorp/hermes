@@ -1,9 +1,9 @@
 NAME=hermes
-BIN := hermes
+BIN := bin/hermes
 
 .PHONY: build
 ## build: Build hermes
-build: $(BIN)
+build:
 	go build -o ${BIN} cmd/server/server.go
 
 .PHONY: clean
