@@ -30,17 +30,23 @@ func (r *router) AddRoutes(e *echo.Echo) {
 }
 
 type statelessRouter struct {
-	messageHandler MessageHandler
+	messageHandler  MessageHandler
+	providerHandler ProviderHandler
 }
 
 func NewStatelessRouter(
 	messageHandler MessageHandler,
+	providerHandler ProviderHandler,
 ) EchoRouter {
 	return &statelessRouter{
-		messageHandler: messageHandler,
+		messageHandler:  messageHandler,
+		providerHandler: providerHandler,
 	}
 }
 
 func (r *statelessRouter) AddRoutes(e *echo.Echo) {
 	e.POST("/messages", r.messageHandler.PostMessage())
+
+	providers := e.Group("/providers")
+	providers.GET("/:provider", r.providerHandler.GetProviderHandler())
 }

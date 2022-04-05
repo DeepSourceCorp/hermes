@@ -49,4 +49,7 @@ var (
 	errFailedSendPermanent = func(internal string) domain.IError {
 		return NewErr(500, "ERR-SLK-50020", "failed to create issue", internal, true)
 	}
+	errFailedOptsFetch = func(internal string) domain.IError {
+		return NewErr(500, "ERR-SLK-50030", "failed to fetch opts", internal, true)
+	}
 )

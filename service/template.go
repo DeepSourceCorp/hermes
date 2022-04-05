@@ -8,6 +8,15 @@ import (
 	"github.com/segmentio/ksuid"
 )
 
+type CreateTemplateRequest struct {
+	Pattern string `json:"pattern"`
+	Type    string `json:"type"`
+}
+
+type TemplateService interface {
+	Create(ctx context.Context, request *CreateTemplateRequest) (*domain.Template, error)
+}
+
 type templateService struct {
 	repository domain.TemplateRepository
 }
