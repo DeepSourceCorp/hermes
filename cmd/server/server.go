@@ -4,6 +4,10 @@ import (
 	"flag"
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
+
+	"os"
+
 	"github.com/deepsourcelabs/hermes/config"
 	"github.com/deepsourcelabs/hermes/domain"
 	handler "github.com/deepsourcelabs/hermes/interfaces/http"
@@ -17,6 +21,7 @@ import (
 )
 
 func StartAsHTTPServer() error {
+	log.Info("starting hermes in stateful mode...")
 	db, err := gorm.Open(postgres.Open("postgres://hermes:password@localhost:5432/hermes"), &gorm.Config{})
 	if err != nil {
 		return err
@@ -31,8 +36,7 @@ func StartAsHTTPServer() error {
 
 	router := handler.NewRouter(
 		templateHandler,
-		messageHandler,
-	)
+		messageHandler)
 
 	e := echo.New()
 	router.AddRoutes(e)
@@ -54,9 +58,13 @@ func StartInStatelessMode(cfg *config.AppConfig) error {
 	messsageService := service.NewMessageService(templateStore)
 	messageHandler := handler.NewMessageHandler(messsageService)
 
-	router := handler.NewStatelessRouter(messageHandler)
+	providerService := service.NewProviderService()
+	providerHandler := handler.NewProviderHandler(providerService)
+
+	router := handler.NewStatelessRouter(messageHandler, providerHandler)
 
 	e := echo.New()
+	e.HideBanner = true
 	router.AddRoutes(e)
 	return e.Start(fmt.Sprintf(":%d", cfg.Port))
 }
@@ -101,12 +109,17 @@ func main() {
 		panic(err)
 	}
 
+	log.SetOutput(os.Stdout)
+	log.SetLevel(log.InfoLevel)
+
 	var isStateless = flag.Bool("stateless", true, "foobar")
 	if *isStateless {
+		log.Info("starting hermes in stateless mode...")
 		if err := StartInStatelessMode(cfg); err != nil {
 			panic(err)
 		}
 	}
+	log.Info("starting hermes in stateful mode...")
 	if err := StartAsHTTPServer(); err != nil {
 		panic(err)
 	}
