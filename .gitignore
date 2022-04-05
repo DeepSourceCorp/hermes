@@ -29,5 +29,4 @@ template.yml
 templates
 
 # Binary
-server
-hermes
+bin/hermes
