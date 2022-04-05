@@ -12,7 +12,7 @@ import (
 
 func Test_templateStore_GetByID(t *testing.T) {
 	type fields struct {
-		cfg        *config.TemplateCfg
+		cfg        *config.TemplateConfig
 		fnReadFile func(filename string) ([]byte, error)
 	}
 	type args struct {
@@ -29,7 +29,7 @@ func Test_templateStore_GetByID(t *testing.T) {
 		{
 			name: "load template from config",
 			fields: fields{
-				cfg: &config.TemplateCfg{Templates: []config.Template{
+				cfg: &config.TemplateConfig{Templates: []config.Template{
 					{
 						ID:                 "abc",
 						Path:               "xyz",
@@ -56,7 +56,7 @@ func Test_templateStore_GetByID(t *testing.T) {
 		{
 			name: "read failed",
 			fields: fields{
-				cfg: &config.TemplateCfg{Templates: []config.Template{
+				cfg: &config.TemplateConfig{Templates: []config.Template{
 					{
 						ID:                 "abc",
 						Path:               "xyz",
