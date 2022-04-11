@@ -18,7 +18,7 @@ import (
 
 func StartAsHTTPServer() error {
 	log.Info("starting hermes in stateful mode...")
-	db, err := gorm.Open(postgres.Open("postgres://hermes:password@localhost:5432/hermes"), &gorm.Config{SkipDefaultTransaction: false})
+	db, err := gorm.Open(postgres.Open("postgres://hermes:password@localhost:5432/hermes"), &gorm.Config{SkipDefaultTransaction: true})
 	if err != nil {
 		return err
 	}
