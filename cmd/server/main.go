@@ -17,20 +17,13 @@ func main() {
 	log.SetLevel(log.InfoLevel)
 
 	var isStateless = flag.Bool("stateless", true, "-stateless")
-	var useEnv = flag.Bool("use-env", false, "-use-env")
 
 	flag.Parse()
 
 	// Parse config
 	cfg := new(config.AppConfig)
-	if *useEnv {
-		if err := cfg.ReadEnv(); err != nil {
-			panic(err)
-		}
-	} else {
-		if err := cfg.ReadYAML("./"); err != nil {
-			panic(err)
-		}
+	if err := cfg.ReadYAML("./"); err != nil {
+		panic(err)
 	}
 	if err := cfg.Validate(); err != nil {
 		panic(err)

@@ -5,24 +5,30 @@ import (
 	"os"
 	"path"
 
-	"github.com/mitchellh/mapstructure"
 	"gopkg.in/yaml.v3"
 )
 
-type AppConfig struct {
-	// Server configuration
-	Port        int    `mapstructure:"PORT" yaml:"PORT"`
-	TemplateDir string `mapstructure:"TEMPLATE_DIR" yaml:"TEMPLATE_DIR"`
+type PGConfig struct {
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	Database string `yaml:"db"`
 }
 
-const TagName = "mapstructure"
+type AppConfig struct {
+	// Server configuration
+	Port        int       `yaml:"port"`
+	TemplateDir string    `yaml:"templateDir"`
+	Postgres    *PGConfig `yaml:"postgres"`
+}
 
-func (config *AppConfig) ReadEnv() error {
-	m, err := env2Map(*config)
+func (config *AppConfig) ReadYAML(configPath string) error {
+	configBytes, err := os.ReadFile(path.Join(configPath, "./config.yaml"))
 	if err != nil {
 		return err
 	}
-	return mapstructure.Decode(m, config)
+	return yaml.Unmarshal(configBytes, config)
 }
 
 func (config *AppConfig) Validate() error {
@@ -33,12 +39,4 @@ func (config *AppConfig) Validate() error {
 		return errors.New("TEMPLATE_CONFIG not defined in env")
 	}
 	return nil
-}
-
-func (config *AppConfig) ReadYAML(configPath string) error {
-	configBytes, err := os.ReadFile(path.Join(configPath, "./config.yaml"))
-	if err != nil {
-		return err
-	}
-	return yaml.Unmarshal(configBytes, config)
 }
