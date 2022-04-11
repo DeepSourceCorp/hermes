@@ -1,5 +1,5 @@
 NAME=hermes
-BIN := bin/hermes
+BIN ?= bin/hermes
 
 .PHONY: build
 ## build: Build hermes
