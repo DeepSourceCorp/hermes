@@ -22,8 +22,7 @@ func (config *AppConfig) ReadEnv() error {
 	if err != nil {
 		return err
 	}
-	mapstructure.Decode(m, config)
-	return nil
+	return mapstructure.Decode(m, config)
 }
 
 func (config *AppConfig) Validate() error {

@@ -30,6 +30,12 @@ func Test_env2Map(t *testing.T) {
 			},
 			false,
 		},
+		{
+			"error for pointer input",
+			args{v: &TestStruct{Foo: "bar"}},
+			nil,
+			true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

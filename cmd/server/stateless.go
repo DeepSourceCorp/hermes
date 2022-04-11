@@ -8,9 +8,10 @@ import (
 	"github.com/deepsourcelabs/hermes/service"
 	configStore "github.com/deepsourcelabs/hermes/storage/config"
 	"github.com/labstack/echo/v4"
+	log "github.com/sirupsen/logrus"
 )
 
-func StartStatelessMode(cfg *config.AppConfig) error {
+func StartStatelessMode(cfg *config.AppConfig, e *echo.Echo) error {
 	if err := config.InitTemplateConfig(cfg.TemplateDir); err != nil {
 		return err
 	}
@@ -26,8 +27,7 @@ func StartStatelessMode(cfg *config.AppConfig) error {
 
 	router := handler.NewStatelessRouter(messageHandler, providerHandler)
 
-	e := echo.New()
-	e.HideBanner = true
 	router.AddRoutes(e)
+	log.Info("starting hermes in stateless mode")
 	return e.Start(fmt.Sprintf(":%d", cfg.Port))
 }
