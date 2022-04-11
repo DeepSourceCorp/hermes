@@ -21,11 +21,22 @@ func main() {
 
 	flag.Parse()
 
-	cfg, err := getConfig(*useEnv)
-	if err != nil {
+	// Parse config
+	cfg := new(config.AppConfig)
+	if *useEnv {
+		if err := cfg.ReadEnv(); err != nil {
+			panic(err)
+		}
+	} else {
+		if err := cfg.ReadYAML("./"); err != nil {
+			panic(err)
+		}
+	}
+	if err := cfg.Validate(); err != nil {
 		panic(err)
 	}
 
+	// Initialize web server
 	e := echo.New()
 	e.HideBanner = true
 
@@ -39,21 +50,4 @@ func main() {
 	if err := StartStatefulMode(cfg, e); err != nil {
 		panic(err)
 	}
-}
-
-func getConfig(useEnv bool) (*config.AppConfig, error) {
-	cfg := new(config.AppConfig)
-	if useEnv {
-		if err := cfg.ReadEnv(); err != nil {
-			return nil, err
-		}
-	} else {
-		if err := cfg.ReadYAML("./"); err != nil {
-			return nil, err
-		}
-	}
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-	return cfg, nil
 }
