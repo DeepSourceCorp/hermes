@@ -26,17 +26,11 @@ func (config *TemplateConfig) ReadYAML(configPath string) error {
 	if err != nil {
 		return err
 	}
-	if err := yaml.Unmarshal(configBytes, config); err != nil {
-		return err
-	}
-	return nil
+	return yaml.Unmarshal(configBytes, config)
 }
 
 func InitTemplateConfig(templateDir string) error {
-	if err := templateConfig.ReadYAML(templateDir); err != nil {
-		return err
-	}
-	return nil
+	return templateConfig.ReadYAML(templateDir)
 }
 
 type TemplateConfigFactory interface {

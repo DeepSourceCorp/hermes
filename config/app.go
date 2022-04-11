@@ -41,8 +41,5 @@ func (config *AppConfig) ReadYAML(configPath string) error {
 	if err != nil {
 		return err
 	}
-	if err := yaml.Unmarshal(configBytes, config); err != nil {
-		return err
-	}
-	return nil
+	return yaml.Unmarshal(configBytes, config)
 }
