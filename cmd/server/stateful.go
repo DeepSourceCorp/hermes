@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/deepsourcelabs/hermes/config"
@@ -14,8 +15,11 @@ import (
 )
 
 func StartStatefulMode(cfg *config.AppConfig, e *echo.Echo) error {
+	if cfg.Postgres == nil {
+		return errors.New("postgres configuration not set")
+	}
 	db, err := gorm.Open(
-		postgres.Open("postgres://hermes:password@localhost:5432/hermes"),
+		postgres.Open(cfg.Postgres.GetDSN()),
 		&gorm.Config{SkipDefaultTransaction: true},
 	)
 	if err != nil {

@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path"
 
@@ -14,6 +15,17 @@ type PGConfig struct {
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
 	Database string `yaml:"db"`
+}
+
+func (pgConfig *PGConfig) GetDSN() string {
+	// postgres://hermes:password@localhost:5432/hermes
+	return fmt.Sprintf("postgres://%s:%s@%s:%d/%s",
+		pgConfig.User,
+		pgConfig.Password,
+		pgConfig.Host,
+		pgConfig.Port,
+		pgConfig.Database,
+	)
 }
 
 type AppConfig struct {
