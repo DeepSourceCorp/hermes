@@ -13,6 +13,7 @@ const (
 	TemplateTypeText       TemplateType = "text"
 	TemplateTypeMustache   TemplateType = "mustache"
 	TemplateTypeGoTemplate TemplateType = "gotmpl"
+	TemplateTypeJinja      TemplateType = "jinja"
 )
 
 type Template struct {
@@ -48,6 +49,8 @@ func (t *Template) GetTemplater() Templater {
 		return &templater.Mustache{}
 	case TemplateTypeGoTemplate:
 		return &templater.Go{}
+	case TemplateTypeJinja:
+		return &templater.Jinja{}
 	}
 	return nil
 }

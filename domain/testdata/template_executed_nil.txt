@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Hermes</title>
+</head>
+
+<body>
+    <h1></h1>
+
+    <h1>Results</h1>
+
+    <table>
+    <tr>
+        <th>File</th>
+        <th>Issue</th>
+        <th>Description</th>
+    </tr>
+    
+    </table>
+</body>
+
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Hermes</title>
+</head>
+
+<body>
+    <h1>{{ deepsource.title|safe }}</h1>
+
+    <h1>Results</h1>
+
+    <table>
+    <tr>
+        <th>File</th>
+        <th>Issue</th>
+        <th>Description</th>
+    </tr>
+    {% for result in deepsource.results %}
+    <tr>
+        <td>{{ result.File }}</td>
+        <td>{{ result.Issue }}</td>
+        <td>{{ result.Description }}</td>
+    </tr>
+    {% endfor %}
+    </table>
+</body>
+
+</html>
