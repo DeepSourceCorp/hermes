@@ -44,7 +44,7 @@ func (t *Template) entity() *domain.Template {
 	}
 }
 
-func (store *templateStore) Create(ctx context.Context, tmpl *domain.Template) domain.IError {
+func (store *templateStore) Create(_ context.Context, tmpl *domain.Template) domain.IError {
 	t := newTemplate(tmpl)
 	if err := store.db.Create(t).Error; err != nil {
 		return errDBErr(err.Error())
@@ -52,7 +52,7 @@ func (store *templateStore) Create(ctx context.Context, tmpl *domain.Template) d
 	return nil
 }
 
-func (store *templateStore) GetByID(ctx context.Context, id string) (*domain.Template, domain.IError) {
+func (store *templateStore) GetByID(_ context.Context, id string) (*domain.Template, domain.IError) {
 	tmpl := &Template{}
 	if err := store.db.First(&tmpl, &Template{ID: id}).Error; err != nil {
 		return nil, errDBErr(err.Error())

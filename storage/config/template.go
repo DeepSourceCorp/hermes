@@ -21,12 +21,12 @@ func NewTemplateStore(templateConfigFactory config.TemplateConfigFactory) domain
 }
 
 // Create creates a new store.  WARNING: Config store does not support writes at the moment.
-func (store *templateStore) Create(ctx context.Context, tmpl *domain.Template) domain.IError {
+func (store *templateStore) Create(_ context.Context, _ *domain.Template) domain.IError {
 	return errDBErr("config store does not support write")
 }
 
 //
-func (store *templateStore) GetByID(ctx context.Context, id string) (*domain.Template, domain.IError) {
+func (store *templateStore) GetByID(_ context.Context, id string) (*domain.Template, domain.IError) {
 	var t = new(config.Template)
 
 	for _, v := range store.cfg.Templates {
