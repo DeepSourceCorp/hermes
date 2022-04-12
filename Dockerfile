@@ -8,7 +8,7 @@ COPY . /code
 WORKDIR /code
 
 RUN make deps \
-    && GOOS=linux GOARCH=amd64 BIN=/bin/hermes make build
+    && BIN=/bin/hermes make build
 
 FROM alpine:3.15
 RUN mkdir /app
