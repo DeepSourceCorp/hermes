@@ -9,13 +9,13 @@ import (
 )
 
 type templateStore struct {
-	cfg        *config.TemplateCfg
+	cfg        *config.TemplateConfig
 	fnReadFile func(filename string) ([]byte, error)
 }
 
-func NewTemplateStore(cfg *config.TemplateCfg) domain.TemplateRepository {
+func NewTemplateStore(templateConfigFactory config.TemplateConfigFactory) domain.TemplateRepository {
 	return &templateStore{
-		cfg:        cfg,
+		cfg:        templateConfigFactory.GetTemplateConfig(),
 		fnReadFile: os.ReadFile,
 	}
 }
