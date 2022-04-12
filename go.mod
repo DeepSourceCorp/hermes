@@ -3,7 +3,6 @@ module github.com/deepsourcelabs/hermes
 go 1.17
 
 require (
-	github.com/davecgh/go-spew v1.1.1
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/knadh/koanf v1.4.1
 	github.com/labstack/echo/v4 v4.7.0
@@ -17,6 +16,7 @@ require (
 )
 
 require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.11.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
