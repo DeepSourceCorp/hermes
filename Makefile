@@ -6,7 +6,7 @@ GOARCH ?= arm64
 .PHONY: build
 ## build: Build hermes
 build:
-	GOOS=${GOOS} GOARCH=${GOARCH} go build -o ${BIN} cmd/server/**.go
+	go build -o ${BIN} cmd/server/**.go
 
 .PHONY: clean
 ## clean: Clean projects and previous builds
