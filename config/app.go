@@ -3,18 +3,22 @@ package config
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path"
+	"strings"
 
-	"gopkg.in/yaml.v3"
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/providers/env"
+)
+
+const (
+	envPrefix = "HERMES_"
 )
 
 type PGConfig struct {
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	Database string `yaml:"db"`
+	Host     string `koanf:"host"`
+	Port     int    `koanf:"port"`
+	User     string `koanf:"user"`
+	Password string `koanf:"password"`
+	Database string `koanf:"db"`
 }
 
 func (pgConfig *PGConfig) GetDSN() string {
@@ -30,17 +34,19 @@ func (pgConfig *PGConfig) GetDSN() string {
 
 type AppConfig struct {
 	// Server configuration
-	Port        int       `yaml:"port"`
-	TemplateDir string    `yaml:"templateDir"`
-	Postgres    *PGConfig `yaml:"postgres"`
+	Port        int       `koanf:"port"`
+	TemplateDir string    `koanf:"templatedir"`
+	Postgres    *PGConfig `koanf:"postgres"`
 }
 
-func (config *AppConfig) ReadYAML(configPath string) error {
-	configBytes, err := os.ReadFile(path.Join(configPath, "./config.yaml"))
-	if err != nil {
-		return err
-	}
-	return yaml.Unmarshal(configBytes, config)
+func (config *AppConfig) ReadEnv() error {
+	var k = koanf.New(".")
+	k.Load(env.Provider(envPrefix, ".", func(s string) string {
+		return strings.Replace(strings.ToLower(
+			strings.TrimPrefix(s, envPrefix)), "_", ".", -1)
+	}), nil)
+
+	return k.Unmarshal("", config)
 }
 
 func (config *AppConfig) Validate() error {

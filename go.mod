@@ -3,7 +3,9 @@ module github.com/deepsourcelabs/hermes
 go 1.17
 
 require (
+	github.com/davecgh/go-spew v1.1.1
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
+	github.com/knadh/koanf v1.4.1
 	github.com/labstack/echo/v4 v4.7.0
 	github.com/mitchellh/mapstructure v1.4.3
 	github.com/segmentio/ksuid v1.0.4
@@ -15,7 +17,6 @@ require (
 )
 
 require (
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.11.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -29,6 +30,8 @@ require (
 	github.com/labstack/gommon v0.3.1 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/mitchellh/copystructure v1.2.0 // indirect
+	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.1 // indirect

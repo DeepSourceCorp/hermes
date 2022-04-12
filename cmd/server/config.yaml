@@ -1,9 +1,0 @@
----
-port: 7272
-templateDir: "./"
-postgres:
-  host: localhost
-  port: 5432
-  user: hermes
-  password: password
-  db: hermes
