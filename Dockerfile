@@ -7,8 +7,8 @@ RUN mkdir /code
 COPY . /code
 WORKDIR /code
 
-RUN make deps \
-    && BIN=/bin/hermes make build
+RUN make deps
+RUN BIN=/bin/hermes make build
 
 FROM alpine:3.15
 RUN mkdir /app
