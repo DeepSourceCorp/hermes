@@ -1,10 +1,12 @@
 NAME=hermes
 BIN ?= bin/hermes
+GOOS ?= darwin
+GOARCH ?= arm64
 
 .PHONY: build
 ## build: Build hermes
 build:
-	go build -o ${BIN} cmd/server/**.go
+	GOOS=${GOOS} GOARCH=${GOARCH} go build -o ${BIN} cmd/server/**.go
 
 .PHONY: clean
 ## clean: Clean projects and previous builds
