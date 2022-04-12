@@ -26,7 +26,7 @@ func (config *TemplateConfig) ReadYAML(configPath string) error {
 	if err != nil {
 		return err
 	}
-	return yaml.Unmarshal(configBytes, config)
+	return yaml.Unmarshal(configBytes, &config)
 }
 
 func InitTemplateConfig(templateDir string) error {
