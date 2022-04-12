@@ -4,3 +4,4 @@ steps:
   args:
   - --destination=us.gcr.io/deepsource-dev/hermes:dev
   - --dockerfile=Dockerfile
+  - --cache=false
