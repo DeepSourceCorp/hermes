@@ -30,3 +30,10 @@ templates
 
 # Binary
 bin/hermes
+
+# Config file
+config.yaml
+
+# Ignore templates.yaml and templates directory
+template.yaml
+templates/*

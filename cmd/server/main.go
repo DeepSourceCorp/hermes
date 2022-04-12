@@ -22,7 +22,7 @@ func main() {
 
 	// Parse config
 	cfg := new(config.AppConfig)
-	if err := cfg.ReadYAML("./"); err != nil {
+	if err := cfg.ReadEnv(); err != nil {
 		panic(err)
 	}
 	if err := cfg.Validate(); err != nil {
