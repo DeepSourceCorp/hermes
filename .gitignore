@@ -20,9 +20,6 @@
 # Go workspace file
 go.work
 
-# Go sum file
-go.sum
-
 # Custom ignores
 app.env
 template.yml
