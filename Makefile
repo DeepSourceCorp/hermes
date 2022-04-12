@@ -4,7 +4,7 @@ BIN := bin/hermes
 .PHONY: build
 ## build: Build hermes
 build:
-	go build -o ${BIN} cmd/server/server.go
+	go build -o ${BIN} cmd/server/**.go
 
 .PHONY: clean
 ## clean: Clean projects and previous builds
