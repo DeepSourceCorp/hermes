@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -22,12 +21,6 @@ func main() {
 
 	flag.Parse()
 
-	// Initialize prometheus metrics
-	go func() {
-		http.Handle("/metrics", promhttp.Handler())
-		log.Fatal(http.ListenAndServe(":2112", nil))
-	}()
-
 	// Parse config
 	cfg := new(config.AppConfig)
 	if err := cfg.ReadEnv(); err != nil {
@@ -40,6 +33,9 @@ func main() {
 	// Initialize web server
 	e := echo.New()
 	e.HideBanner = true
+
+	// Setup prometheus metrics handler
+	e.GET("/metrics", echo.WrapHandler(promhttp.Handler()))
 
 	if *isStateless {
 		if err := StartStatelessMode(cfg, e); err != nil {
