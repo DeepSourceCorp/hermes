@@ -17,8 +17,8 @@ Hermes provides a single unified API for notifications.
 
 Hermes aims to support multiple templating frameworks including:
 - Mustache templates (✓)
-- Go Templates
-- Django Templates
+- Go Templates (✓)
+- Django Templates (✓)
 - MJML
 
 ...and many more.
