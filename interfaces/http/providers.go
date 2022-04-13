@@ -24,7 +24,7 @@ func NewProviderHandler(providerService service.ProviderService) ProviderHandler
 func (handler *providerHandler) GetProviderHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		request := new(service.GetProviderReqeuest)
+		request := new(service.GetProviderRequest)
 		if err := c.Bind(request); err != nil {
 			return c.JSON(http.StatusBadRequest, ErrorResponse{"request malformed"})
 		}
