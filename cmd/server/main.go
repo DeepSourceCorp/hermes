@@ -28,11 +28,11 @@ func main() {
 	// Parse config
 	cfg := new(config.AppConfig)
 	if err := cfg.ReadEnv(); err != nil {
-		log.Error("failed to initalize configuration, err=%v", err)
+		log.Errorf("failed to initalize configuration, err=%v", err)
 		os.Exit(1)
 	}
 	if err := cfg.Validate(); err != nil {
-		log.Error("app configuration is invalid, err=%v", err)
+		log.Errorf("app configuration is invalid, err=%v", err)
 		os.Exit(1)
 	}
 
