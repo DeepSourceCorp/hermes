@@ -2,6 +2,8 @@ package config
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAppConfig_Validate(t *testing.T) {
@@ -41,4 +43,39 @@ func TestAppConfig_Validate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetDSN(t *testing.T) {
+	pgConfig := &PGConfig{
+		User:     "hermes",
+		Password: "password",
+		Host:     "localhost",
+		Port:     5432,
+		Database: "hermes",
+	}
+	got := pgConfig.GetDSN()
+	want := "postgres://hermes:password@localhost:5432/hermes"
+
+	if got != want {
+		t.Errorf("dsn doesn't match, got: %s, want: %s\n", got, want)
+	}
+}
+
+func TestReadEnv(t *testing.T) {
+	pgConfig := &PGConfig{
+		User:     "hermes",
+		Password: "password",
+		Host:     "localhost",
+		Port:     5432,
+		Database: "hermes",
+	}
+
+	conf := &AppConfig{
+		Port:        8080,
+		TemplateDir: "./templates",
+		Postgres:    pgConfig,
+	}
+
+	err := conf.ReadEnv()
+	assert.Nil(t, err)
 }
