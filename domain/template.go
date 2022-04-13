@@ -1,12 +1,10 @@
 package domain
 
 import (
-	"bytes"
 	"context"
-	"text/template"
 	"time"
 
-	"github.com/hoisie/mustache"
+	"github.com/deepsourcelabs/hermes/templater"
 )
 
 type TemplateType string
@@ -47,32 +45,9 @@ type Templater interface {
 func (t *Template) GetTemplater() Templater {
 	switch t.Type {
 	case TemplateTypeMustache:
-		return &mustacheTemplater{}
+		return &templater.Mustache{}
 	case TemplateTypeGoTemplate:
-		return &goTemplater{}
+		return &templater.Go{}
 	}
 	return nil
-}
-
-type mustacheTemplater struct{}
-type goTemplater struct{}
-
-func (*mustacheTemplater) Execute(pattern string, params interface{}) ([]byte, error) {
-	str := mustache.Render(pattern, params)
-	return []byte(str), nil
-}
-
-func (*goTemplater) Execute(pattern string, params interface{}) ([]byte, error) {
-	tmpl, err := template.New("template").Parse(pattern)
-	if err != nil {
-		return nil, err
-	}
-
-	var b bytes.Buffer
-	err = tmpl.Execute(&b, params)
-	if err != nil {
-		return nil, err
-	}
-
-	return b.Bytes(), nil
 }
