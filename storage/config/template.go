@@ -25,7 +25,6 @@ func (store *templateStore) Create(ctx context.Context, tmpl *domain.Template) d
 	return errDBErr("config store does not support write")
 }
 
-//
 func (store *templateStore) GetByID(ctx context.Context, id string) (*domain.Template, domain.IError) {
 	var t = new(config.Template)
 
