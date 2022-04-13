@@ -68,6 +68,7 @@ func TestExecuteJinja(t *testing.T) {
 	}{
 		{"jinja_must work with pattern and data", "jinja", "./testdata/template.txt", "./testdata/template_executed.txt", map[string]interface{}{"deepsource": params}},
 		{"jinja_must work with pattern and no data", "jinja", "./testdata/template.txt", "./testdata/template_executed_nil.txt", map[string]interface{}{"deepsource": nil}},
+		{"jinja_must work with pattern and no params", "jinja", "./testdata/template.txt", "./testdata/template_executed_nil.txt", nil},
 	}
 
 	for _, tt := range tests {
