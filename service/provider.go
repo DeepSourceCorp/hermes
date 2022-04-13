@@ -11,10 +11,10 @@ import (
 )
 
 type ProviderService interface {
-	GetProvider(context.Context, *GetProviderReqeuest) (*GetProviderResponse, domain.IError)
+	GetProvider(context.Context, *GetProviderRequest) (*GetProviderResponse, domain.IError)
 }
 
-type GetProviderReqeuest struct {
+type GetProviderRequest struct {
 	Token string              `header:"X-Notifier-Token"`
 	Type  domain.ProviderType `param:"provider"`
 }
@@ -30,7 +30,7 @@ func NewProviderService() ProviderService {
 	return &providerService{}
 }
 
-func (service *providerService) GetProvider(ctx context.Context, request *GetProviderReqeuest) (*GetProviderResponse, domain.IError) {
+func (service *providerService) GetProvider(ctx context.Context, request *GetProviderRequest) (*GetProviderResponse, domain.IError) {
 	provider := newProvider(request.Type)
 	response, err := provider.GetOptValues(ctx, &domain.NotifierSecret{Token: request.Token})
 	if err != nil {
