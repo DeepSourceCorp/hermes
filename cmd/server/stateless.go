@@ -12,7 +12,8 @@ import (
 )
 
 func StartStatelessMode(cfg *config.AppConfig, e *echo.Echo) error {
-	if err := config.InitTemplateConfig(cfg.TemplateDir); err != nil {
+	if err := config.InitTemplateConfig(cfg.TemplateConfigPath); err != nil {
+		log.Errorf("failed to intitialize configuration, err = %v", err)
 		return err
 	}
 	templateConfigFactory := config.NewTemplateConfigFactory()

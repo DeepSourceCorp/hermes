@@ -34,9 +34,9 @@ func (pgConfig *PGConfig) GetDSN() string {
 
 type AppConfig struct {
 	// Server configuration
-	Port        int       `koanf:"port"`
-	TemplateDir string    `koanf:"templatedir"`
-	Postgres    *PGConfig `koanf:"postgres"`
+	Port               int       `koanf:"port"`
+	TemplateConfigPath string    `koanf:"templateConfigPath"`
+	Postgres           *PGConfig `koanf:"postgres"`
 }
 
 func (config *AppConfig) ReadEnv() error {
@@ -53,7 +53,7 @@ func (config *AppConfig) Validate() error {
 	if config.Port == 0 {
 		return errors.New("PORT not defined in env")
 	}
-	if config.TemplateDir == "" {
+	if config.TemplateConfigPath == "" {
 		return errors.New("TEMPLATE_CONFIG not defined in env")
 	}
 	return nil
