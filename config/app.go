@@ -37,6 +37,7 @@ type AppConfig struct {
 	Port               int       `koanf:"port"`
 	TemplateConfigPath string    `koanf:"templateConfigPath"`
 	Postgres           *PGConfig `koanf:"postgres"`
+	Version            string    `koanf:"_"`
 }
 
 func (config *AppConfig) ReadEnv() error {

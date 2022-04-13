@@ -3,23 +3,17 @@ package main
 import (
 	"flag"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/labstack/echo-contrib/prometheus"
+	"github.com/labstack/gommon/log"
 
 	"os"
 
 	"github.com/deepsourcelabs/hermes/config"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
-	log.SetOutput(os.Stdout)
-	log.SetLevel(log.InfoLevel)
-	log.SetFormatter(
-		&log.TextFormatter{
-			TimestampFormat: "2006-01-02 15:04:05",
-			FullTimestamp:   true,
-		},
-	)
 
 	var isStateless = flag.Bool("stateless", true, "-stateless")
 
@@ -38,8 +32,11 @@ func main() {
 
 	// Initialize web server
 	e := echo.New()
+	e.Use(middleware.Logger())
 	e.HideBanner = true
-
+	AddDefaultRoutes(cfg, e)
+	p := prometheus.NewPrometheus("echo", nil)
+	p.Use(e)
 	if *isStateless {
 		if err := StartStatelessMode(cfg, e); err != nil {
 			log.Error("failed to start hermes in stateless mode, exiting")

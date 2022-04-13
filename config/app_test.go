@@ -1,6 +1,7 @@
 package config
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -25,7 +26,7 @@ func TestAppConfig_Validate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "validate AppConfig with TemplateDir empty",
+			name:    "validate AppConfig with TemplateConfigPath empty",
 			fields:  fields{Port: 7272, TemplateConfigPath: ""},
 			wantErr: true,
 		},
@@ -41,4 +42,59 @@ func TestAppConfig_Validate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPGConfig_GetDSN(t *testing.T) {
+	t.Run("get dsn", func(t *testing.T) {
+
+		want := "postgres://hermes:password@localhost:5432/hermesDB"
+
+		pgConfig := &PGConfig{
+			Host:     "localhost",
+			Port:     5432,
+			User:     "hermes",
+			Password: "password",
+			Database: "hermesDB",
+		}
+
+		if got := pgConfig.GetDSN(); got != want {
+			t.Errorf("PGConfig.GetDSN() = %v, want %v", got, want)
+		}
+	})
+}
+
+func TestAppConfig_ReadEnv(t *testing.T) {
+	t.Run("read env with valid env", func(t *testing.T) {
+		t.Setenv("HERMES_PORT", "7272")
+		t.Setenv("HERMES_TEMPLATECONFIGPATH", "./")
+		t.Setenv("HERMES_POSTGRES_HOST", "localhost")
+		t.Setenv("HERMES_POSTGRES_PORT", "5432")
+		t.Setenv("HERMES_POSTGRES_USER", "hermes")
+		t.Setenv("HERMES_POSTGRES_PASSWORD", "password")
+		t.Setenv("HERMES_POSTGRES_DB", "db")
+		appConfig := AppConfig{}
+		if err := appConfig.ReadEnv(); err != nil {
+			t.Errorf("AppConfig.ReadEnv() unexpected error = %v", err)
+		}
+
+		if appConfig.Port != 7272 {
+			t.Errorf("AppConfig.ReadEnv().Port = %v, want %v", appConfig.Port, 7272)
+		}
+		if appConfig.TemplateConfigPath != "./" {
+			t.Errorf("AppConfig.ReadEnv().TemplateConfigPath = %v, want %v", appConfig.TemplateConfigPath, "./")
+		}
+
+		want := &PGConfig{
+			Host:     "localhost",
+			Port:     5432,
+			User:     "hermes",
+			Password: "password",
+			Database: "db",
+		}
+
+		if !reflect.DeepEqual(appConfig.Postgres, want) {
+			t.Errorf("AppConfig.ReadEnv().Postgres = %v, want %v", appConfig.Postgres, want)
+		}
+
+	})
 }
