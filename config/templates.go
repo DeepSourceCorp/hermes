@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path"
 
@@ -11,14 +12,23 @@ import (
 var templateConfig *TemplateConfig
 
 type Template struct {
-	ID                 string                `mapstructure:"id,omitempty"`
-	Path               string                `mapstructure:"path,omitempty"`
-	Type               domain.TemplateType   `mapstructure:"type,omitempty"`
-	SupportedProviders []domain.ProviderType `mapstructure:"supported_providers"`
+	ID                 string                `yaml:"id,omitempty"`
+	Path               string                `yaml:"path,omitempty"`
+	Type               domain.TemplateType   `yaml:"type,omitempty"`
+	SupportedProviders []domain.ProviderType `yaml:"supported_providers"`
 }
 
 type TemplateConfig struct {
-	Templates []Template `mapstructure:"templates"`
+	Templates []Template `yaml:"templates"`
+}
+
+func (tc *TemplateConfig) Validate() error {
+	for _, t := range tc.Templates {
+		if _, err := os.Stat(t.Path); err != nil {
+			return fmt.Errorf("template %s not found at %s", t.ID, t.Path)
+		}
+	}
+	return nil
 }
 
 func (config *TemplateConfig) ReadYAML(configPath string) error {
@@ -29,8 +39,12 @@ func (config *TemplateConfig) ReadYAML(configPath string) error {
 	return yaml.Unmarshal(configBytes, &config)
 }
 
-func InitTemplateConfig(templateDir string) error {
-	return templateConfig.ReadYAML(templateDir)
+func InitTemplateConfig(templateConfigPath string) error {
+	templateConfig = new(TemplateConfig)
+	if err := templateConfig.ReadYAML(templateConfigPath); err != nil {
+		return err
+	}
+	return templateConfig.Validate()
 }
 
 type TemplateConfigFactory interface {

@@ -13,9 +13,14 @@ import (
 )
 
 func main() {
-
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.InfoLevel)
+	log.SetFormatter(
+		&log.TextFormatter{
+			TimestampFormat: "2006-01-02 15:04:05",
+			FullTimestamp:   true,
+		},
+	)
 
 	var isStateless = flag.Bool("stateless", true, "-stateless")
 
@@ -24,10 +29,12 @@ func main() {
 	// Parse config
 	cfg := new(config.AppConfig)
 	if err := cfg.ReadEnv(); err != nil {
-		panic(err)
+		log.Errorf("failed to initalize configuration, err=%v", err)
+		os.Exit(1)
 	}
 	if err := cfg.Validate(); err != nil {
-		panic(err)
+		log.Errorf("app configuration is invalid, err=%v", err)
+		os.Exit(1)
 	}
 
 	// Initialize web server
@@ -39,7 +46,8 @@ func main() {
 
 	if *isStateless {
 		if err := StartStatelessMode(cfg, e); err != nil {
-			panic(err)
+			log.Error("failed to start hermes in stateless mode, exiting")
+			os.Exit(1)
 		}
 		return
 	}
