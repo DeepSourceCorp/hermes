@@ -87,10 +87,8 @@ func StartTemplateConfigWatcher(configPath string) error {
 					return
 				}
 				if event.Op&fsnotify.Write == fsnotify.Write {
-					oldConfig := templateConfig
 					if err := InitTemplateConfig(configPath); err != nil {
-						log.Error(err.Error())
-						templateConfig = oldConfig
+						log.Error("failed to reload config, ", err.Error())
 					}
 				}
 			case err, ok := <-watcher.Errors:
