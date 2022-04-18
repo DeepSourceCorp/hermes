@@ -8,7 +8,7 @@ import (
 	"github.com/deepsourcelabs/hermes/service"
 	configStore "github.com/deepsourcelabs/hermes/storage/config"
 	"github.com/labstack/echo/v4"
-	log "github.com/sirupsen/logrus"
+	"github.com/labstack/gommon/log"
 )
 
 func StartStatelessMode(cfg *config.AppConfig, e *echo.Echo) error {
@@ -16,6 +16,8 @@ func StartStatelessMode(cfg *config.AppConfig, e *echo.Echo) error {
 		log.Errorf("failed to intitialize configuration, err = %v", err)
 		return err
 	}
+	go config.StartTemplateConfigWatcher(cfg.TemplateConfigPath)
+
 	templateConfigFactory := config.NewTemplateConfigFactory()
 
 	templateStore := configStore.NewTemplateStore(templateConfigFactory)

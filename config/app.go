@@ -35,15 +35,16 @@ func (pgConfig *PGConfig) GetDSN() string {
 type AppConfig struct {
 	// Server configuration
 	Port               int       `koanf:"port"`
-	TemplateConfigPath string    `koanf:"templateConfigPath"`
+	TemplateConfigPath string    `koanf:"template_config_path"`
 	Postgres           *PGConfig `koanf:"postgres"`
+	Version            string    `koanf:"_"`
 }
 
 func (config *AppConfig) ReadEnv() error {
 	var k = koanf.New(".")
 	k.Load(env.Provider(envPrefix, ".", func(s string) string {
 		return strings.Replace(strings.ToLower(
-			strings.TrimPrefix(s, envPrefix)), "_", ".", -1)
+			strings.TrimPrefix(s, envPrefix)), "__", ".", -1)
 	}), nil)
 
 	return k.Unmarshal("", config)

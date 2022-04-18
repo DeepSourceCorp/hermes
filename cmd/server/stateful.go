@@ -9,7 +9,7 @@ import (
 	"github.com/deepsourcelabs/hermes/service"
 	sqlStore "github.com/deepsourcelabs/hermes/storage/sql"
 	"github.com/labstack/echo/v4"
-	log "github.com/sirupsen/logrus"
+	"github.com/labstack/gommon/log"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -39,6 +39,6 @@ func StartStatefulMode(cfg *config.AppConfig, e *echo.Echo) error {
 	)
 
 	router.AddRoutes(e)
-	log.Info("starting hermes in stateful mode...")
+	log.Info("starting hermes in stateful mode")
 	return e.Start(fmt.Sprintf(":%d", cfg.Port))
 }

@@ -1,15 +1,19 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"path"
 
 	"github.com/deepsourcelabs/hermes/domain"
+	"github.com/fsnotify/fsnotify"
+	"github.com/labstack/gommon/log"
 	"gopkg.in/yaml.v3"
 )
 
 var templateConfig *TemplateConfig
+
+var osReadFile readFileFn = os.ReadFile
+var osStat statFn = os.Stat
 
 type Template struct {
 	ID                 string                `yaml:"id,omitempty"`
@@ -24,15 +28,16 @@ type TemplateConfig struct {
 
 func (tc *TemplateConfig) Validate() error {
 	for _, t := range tc.Templates {
-		if _, err := os.Stat(t.Path); err != nil {
-			return fmt.Errorf("template %s not found at %s", t.ID, t.Path)
+		_, err := osStat(t.Path)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
 func (config *TemplateConfig) ReadYAML(configPath string) error {
-	configBytes, err := os.ReadFile(path.Join(configPath, "./template.yaml"))
+	configBytes, err := osReadFile(path.Join(configPath, "./template.yaml"))
 	if err != nil {
 		return err
 	}
@@ -40,19 +45,23 @@ func (config *TemplateConfig) ReadYAML(configPath string) error {
 }
 
 func InitTemplateConfig(templateConfigPath string) error {
-	templateConfig = new(TemplateConfig)
-	if err := templateConfig.ReadYAML(templateConfigPath); err != nil {
+	tempConfig := new(TemplateConfig)
+	if err := tempConfig.ReadYAML(templateConfigPath); err != nil {
 		return err
 	}
-	return templateConfig.Validate()
+	if err := tempConfig.Validate(); err != nil {
+		return err
+	}
+	templateConfig = tempConfig
+	log.Info("loaded new template config")
+	return nil
 }
 
 type TemplateConfigFactory interface {
 	GetTemplateConfig() *TemplateConfig
 }
 
-type templateConfigFactory struct {
-}
+type templateConfigFactory struct{}
 
 func NewTemplateConfigFactory() TemplateConfigFactory {
 	return &templateConfigFactory{}
@@ -60,4 +69,40 @@ func NewTemplateConfigFactory() TemplateConfigFactory {
 
 func (*templateConfigFactory) GetTemplateConfig() *TemplateConfig {
 	return templateConfig
+}
+
+func StartTemplateConfigWatcher(configPath string) error {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return err
+	}
+	defer watcher.Close()
+
+	done := make(chan bool)
+	go func() {
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+				if event.Op&fsnotify.Write == fsnotify.Write {
+					if err := InitTemplateConfig(configPath); err != nil {
+						log.Error("failed to reload config, ", err.Error())
+					}
+				}
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				log.Error(err.Error())
+			}
+		}
+	}()
+	err = watcher.Add(configPath)
+	if err != nil {
+		return err
+	}
+	<-done
+	return nil
 }
