@@ -65,13 +65,13 @@ func TestPGConfig_GetDSN(t *testing.T) {
 
 func TestAppConfig_ReadEnv(t *testing.T) {
 	t.Run("read env with valid env", func(t *testing.T) {
-		t.Setenv("HERMES_PORT", "7272")
-		t.Setenv("HERMES_TEMPLATECONFIGPATH", "./")
-		t.Setenv("HERMES_POSTGRES_HOST", "localhost")
-		t.Setenv("HERMES_POSTGRES_PORT", "5432")
-		t.Setenv("HERMES_POSTGRES_USER", "hermes")
-		t.Setenv("HERMES_POSTGRES_PASSWORD", "password")
-		t.Setenv("HERMES_POSTGRES_DB", "db")
+		t.Setenv("HERMES_port", "7272")
+		t.Setenv("HERMES_template_config_path", "./")
+		t.Setenv("HERMES_postgres__host", "localhost")
+		t.Setenv("HERMES_postgres__port", "5432")
+		t.Setenv("HERMES_postgres__user", "hermes")
+		t.Setenv("HERMES_postgres__password", "password")
+		t.Setenv("HERMES_postgres__db", "db")
 		appConfig := AppConfig{}
 		if err := appConfig.ReadEnv(); err != nil {
 			t.Errorf("AppConfig.ReadEnv() unexpected error = %v", err)

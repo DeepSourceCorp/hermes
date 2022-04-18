@@ -34,3 +34,6 @@ config.yaml
 # Ignore templates.yaml and templates directory
 template.yaml
 templates/*
+
+# Ignore .env files
+.env
