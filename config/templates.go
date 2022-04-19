@@ -28,7 +28,7 @@ type TemplateConfig struct {
 
 func (tc *TemplateConfig) Validate() error {
 	for _, t := range tc.Templates {
-		_, err := osStat(t.Path)
+		_, err := os.Stat(t.Path)
 		if err != nil {
 			return err
 		}
