@@ -7,3 +7,5 @@ discuss with other contributors about how you intend to solve the issue.
 If you need to discuss with the maintainers, tag them on the Github
 issue or reach out to us on the `#open-source`  channel on our
 [Discord](https://discord.gg/5fjtRayH).
+
+
