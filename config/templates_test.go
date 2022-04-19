@@ -36,18 +36,6 @@ func TestTemplateConfig_Validate(t *testing.T) {
 		}
 	})
 
-	t.Run("some template files exist [mocked]", func(t *testing.T) {
-		osStat = func(name string) (os.FileInfo, error) {
-			if name == template2.Path {
-				return nil, errTest
-			}
-			return nil, nil
-		}
-		if err := tConfig.Validate(); err == nil {
-			t.Errorf("TemplateConfig.Validate() unexpected error = %v,", err)
-		}
-	})
-
 	t.Run("template file does not exist [mocked]", func(t *testing.T) {
 		osStat = func(_ string) (os.FileInfo, error) { return nil, errTest }
 		if err := tConfig.Validate(); err == nil {
