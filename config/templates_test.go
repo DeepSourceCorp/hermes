@@ -32,6 +32,7 @@ func TestTemplateConfig_Validate(t *testing.T) {
 	t.Run("template files exists [mocked]", func(t *testing.T) {
 		osStat = func(_ string) (os.FileInfo, error) { return nil, nil }
 		if err := tConfig.Validate(); err != nil {
+<<<<<<< Updated upstream
 			t.Errorf("TemplateConfig.Validate() unexpected error = %v,", err)
 		}
 	})
@@ -45,13 +46,20 @@ func TestTemplateConfig_Validate(t *testing.T) {
 		}
 		if err := tConfig.Validate(); err == nil {
 			t.Errorf("TemplateConfig.Validate() unexpected error = %v,", err)
+=======
+			t.Errorf("TemplateConfig.Validate() unexpectesd error = %v,", err)
+>>>>>>> Stashed changes
 		}
 	})
 
 	t.Run("template file does not exist [mocked]", func(t *testing.T) {
 		osStat = func(_ string) (os.FileInfo, error) { return nil, errTest }
 		if err := tConfig.Validate(); err == nil {
+<<<<<<< Updated upstream
 			t.Errorf("TemplateConfig.Validate() unexpected error = %v,", err)
+=======
+			t.Errorf("TemplateConfig.Validate() expected error = %v,", err)
+>>>>>>> Stashed changes
 		}
 	})
 }

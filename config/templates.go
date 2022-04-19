@@ -27,10 +27,25 @@ type TemplateConfig struct {
 }
 
 func (tc *TemplateConfig) Validate() error {
+	basePath, err := os.Getwd()
+	if err != nil {
+		return err
+	}
 	for _, t := range tc.Templates {
+<<<<<<< Updated upstream
 		_, err := osStat(t.Path)
 		if err != nil {
 			return err
+=======
+<<<<<<< Updated upstream
+		if _, err := os.Stat(t.Path); err != nil {
+			return fmt.Errorf("template %s not found at %s", t.ID, t.Path)
+=======
+		_, err := osStat(path.Join(basePath, t.Path))
+		if err != nil {
+			return err
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 		}
 	}
 	return nil
