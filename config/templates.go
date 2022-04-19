@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path"
 
@@ -28,6 +29,7 @@ type TemplateConfig struct {
 
 func (tc *TemplateConfig) Validate() error {
 	for _, t := range tc.Templates {
+		fmt.Println(t.Path)
 		_, err := osStat(t.Path)
 		if err != nil {
 			return err
