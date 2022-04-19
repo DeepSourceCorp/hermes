@@ -13,6 +13,7 @@ RUN make deps \
 FROM alpine:3.15
 RUN mkdir /app
 COPY --from=builder /bin/hermes /app
+WORKDIR /app
 
-ENTRYPOINT /app/hermes
+ENTRYPOINT ./hermes
 EXPOSE 80
