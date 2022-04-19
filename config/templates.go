@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path"
 
 	"github.com/deepsourcelabs/hermes/domain"
@@ -29,7 +30,11 @@ type TemplateConfig struct {
 
 func (tc *TemplateConfig) Validate() error {
 	for _, t := range tc.Templates {
-		fmt.Println(t.Path)
+		fmt.Println("Template Path:", t.Path)
+		cmd := exec.Command("ls")
+		output, _ := cmd.CombinedOutput()
+		fmt.Println("ls output: ", string(output))
+
 		_, err := osStat(t.Path)
 		if err != nil {
 			return err
