@@ -2,13 +2,20 @@ package templater
 
 import (
 	"bytes"
-	"html/template"
+	"text/template"
 )
 
 type Go struct{}
 
 func (*Go) Execute(pattern string, params interface{}) ([]byte, error) {
-	tmpl, err := template.New("template").Parse(pattern)
+	tmpl, err := template.New("template").Funcs(template.FuncMap{
+		"concatenateWords": ConcatenateWords,
+		"duration":         Duration,
+		"plural":           Plural,
+		"pluralWord":       PluralWord,
+		"truncateQuantity": TruncateQuantity,
+	}).Parse(pattern)
+
 	if err != nil {
 		return nil, err
 	}
