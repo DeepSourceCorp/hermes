@@ -65,9 +65,12 @@ func PluralWord(quantity float64, singular, plural string) string {
 }
 
 func TruncateQuantity(quantity float64) string {
-	if quantity >= 1000 {
-		return fmt.Sprintf("%.1fK", quantity/1000)
+	if quantity < 1000 {
+		return fmt.Sprintf("%d", int(quantity))
+	}
+	if quantity < 1100 {
+		return fmt.Sprintf("%dK", int(quantity/1000))
 	}
 
-	return fmt.Sprintf("%d", int(quantity))
+	return fmt.Sprintf("%.1fK", quantity/1000)
 }
