@@ -3,6 +3,7 @@ package jira
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/deepsourcelabs/hermes/domain"
@@ -67,8 +68,57 @@ func (p *jiraSimple) Send(_ context.Context, notifier *domain.Notifier, body []b
 	}, nil
 }
 
-func (p *jiraSimple) GetOptValues(context.Context, *domain.NotifierSecret) (*map[string]interface{}, error) {
-	return &map[string]interface{}{}, nil
+func (p *jiraSimple) GetOptValues(_ context.Context, opts *domain.NotifierSecret) (*map[string]interface{}, error) {
+	acessibleResourcesRequest := &AccessibleResourcesRequest{
+		BearerToken: opts.Token,
+	}
+	accessibleResourcesResponse, err := p.Client.GetAccessibleResources(acessibleResourcesRequest)
+	if err != nil {
+		fmt.Println("foobar0: ", err)
+		return nil, err
+	}
+	sites := []map[string]string{}
+	siteOptValues := map[string]map[string][]map[string]string{}
+	for _, site := range *accessibleResourcesResponse {
+		sites = append(sites, map[string]string{"id": site.ID, "name": site.Name})
+		issueTypesResponse, err := p.Client.GetIssueTypes(&GetIssueTypesRequest{BearerToken: opts.Token, CloudID: site.ID})
+		if err != nil {
+			fmt.Println("foobar1: ", err)
+			return nil, err
+		}
+		issueTypes := []map[string]string{}
+		for _, it := range *issueTypesResponse {
+			issueTypes = append(issueTypes, map[string]string{
+				"id":   it.ID,
+				"name": it.Name,
+			})
+		}
+
+		projects, err := p.Client.GetProjects(&GetProjectsRequest{BearerToken: opts.Token, CloudID: site.ID})
+		if err != nil {
+			fmt.Println("foobar2: ", err)
+			return nil, err
+		}
+		projectKeys := []map[string]string{}
+		for _, p := range projects.Values {
+			projectKeys = append(projectKeys, map[string]string{
+				"id":   p.Key,
+				"name": p.Name,
+			})
+		}
+
+		siteOptValues[site.ID] = map[string][]map[string]string{
+			"project_key": projectKeys,
+			"issue_type":  issueTypes,
+		}
+	}
+
+	return &map[string]interface{}{
+		"cloud_id": sites,
+		"_rel": map[string]interface{}{
+			"cloud_id": siteOptValues,
+		},
+	}, nil
 }
 
 // Payload defines the primary content payload for the JIRA provider.
