@@ -29,7 +29,6 @@ func (*errHTTP) Do(_ *http.Request) (*http.Response, error) {
 }
 
 func Test_jiraSimple_Send(t *testing.T) {
-
 	type fields struct {
 		httpClient provider.IHTTPClient
 	}
@@ -286,7 +285,7 @@ func Test_jiraSimple_Send(t *testing.T) {
 }
 
 func TestOpts_Extract(t *testing.T) {
-	var got = new(Opts)
+	got := new(Opts)
 	secret := &domain.NotifierSecret{Token: "token"}
 	want := &Opts{
 		ProjectKey: "abc",

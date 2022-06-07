@@ -11,10 +11,12 @@ import (
 	"github.com/deepsourcelabs/hermes/provider"
 )
 
-const accessibleResourcesURL = "https://api.atlassian.com/oauth/token/accessible-resources"
-const projectSearchURL = "https://api.atlassian.com/ex/jira/%s/rest/api/3/project/search?jql=&maxResults=500"
-const postIssueURL = "https://api.atlassian.com/ex/jira/%s/rest/api/3/issue"
-const issueTypesResourceURL = "https://api.atlassian.com/ex/jira/%s/rest/api/3/issuetype"
+const (
+	accessibleResourcesURL = "https://api.atlassian.com/oauth/token/accessible-resources"
+	projectSearchURL       = "https://api.atlassian.com/ex/jira/%s/rest/api/3/project/search?jql=&maxResults=500"
+	postIssueURL           = "https://api.atlassian.com/ex/jira/%s/rest/api/3/issue"
+	issueTypesResourceURL  = "https://api.atlassian.com/ex/jira/%s/rest/api/3/issuetype"
+)
 
 type Client struct {
 	HTTPClient provider.IHTTPClient
@@ -32,12 +34,11 @@ type Project struct {
 		One6X16   string `json:"16x16"`
 		Three2X32 string `json:"32x32"`
 	} `json:"avatarUrls"`
-	ProjectTypeKey string `json:"projectTypeKey"`
-	Simplified     bool   `json:"simplified"`
-	Style          string `json:"style"`
-	IsPrivate      bool   `json:"isPrivate"`
-	Properties     struct {
-	} `json:"properties"`
+	ProjectTypeKey string   `json:"projectTypeKey"`
+	Simplified     bool     `json:"simplified"`
+	Style          string   `json:"style"`
+	IsPrivate      bool     `json:"isPrivate"`
+	Properties     struct{} `json:"properties"`
 }
 
 type IssueType struct {
@@ -93,7 +94,7 @@ func (c *Client) CreateIssue(request *CreateIssueRequest) (*CreateIssueResponse,
 		return nil, handleHTTPFailure(resp)
 	}
 
-	var response = new(CreateIssueResponse)
+	response := new(CreateIssueResponse)
 	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
 		return nil, errFailedPermenant("success but failed to parse response body")
 	}
@@ -129,7 +130,7 @@ func (c *Client) GetAccessibleResources(request *AccessibleResourcesRequest) (*A
 		return nil, handleHTTPFailure(resp)
 	}
 
-	var response = new(AccessibleResourcesResponse)
+	response := new(AccessibleResourcesResponse)
 	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
 		return nil, errFailedPermenant("success but failed to parse response body")
 	}
@@ -156,20 +157,24 @@ func (c *Client) GetProjects(request *GetProjectsRequest) (*GetProjectsResponse,
 	if err != nil {
 		return nil, errFailedTemporary("failed to send request")
 	}
+
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", request.BearerToken))
 	req.Header.Add("Content-Type", "application/json; charset=utf-8")
+
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, errFailedTemporary("something went wrong")
 	}
-	if resp.StatusCode < 200 || resp.StatusCode > 399 {
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
 		return nil, handleHTTPFailure(resp)
 	}
 
-	var response = new(GetProjectsResponse)
+	response := new(GetProjectsResponse)
 	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
 		return nil, errFailedPermenant("success but failed to parse response body")
 	}
+
 	return response, nil
 }
 
@@ -185,20 +190,24 @@ func (c *Client) GetIssueTypes(request *GetIssueTypesRequest) (*GetIssueTypesRes
 	if err != nil {
 		return nil, errFailedTemporary("failed to send request")
 	}
+
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", request.BearerToken))
 	req.Header.Add("Content-Type", "application/json; charset=utf-8")
+
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, errFailedTemporary("something went wrong")
 	}
-	if resp.StatusCode < 200 || resp.StatusCode > 399 {
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
 		return nil, handleHTTPFailure(resp)
 	}
 
-	var response = new(GetIssueTypesResponse)
+	response := new(GetIssueTypesResponse)
 	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
 		return nil, errFailedPermenant("success but failed to parse response body")
 	}
+
 	return response, nil
 }
 
@@ -208,11 +217,12 @@ func handleHTTPFailure(response *http.Response) domain.IError {
 		return errFailedPermenant("received non 2xx, failed to parse response")
 	}
 
-	if response.StatusCode > 500 {
-		if err != nil {
-			return errFailedTemporary(fmt.Sprintf("received 5xx, error=%s", string(b)))
-		}
-	}
+	// FIXME(SS): It returns the same error in the commented out code.
+	// if response.StatusCode > http.StatusInternalServerError {
+	// 	if err != nil {
+	// 		return errFailedTemporary(fmt.Sprintf("received 5xx, error=%s", string(b)))
+	// 	}
+	// }
 
 	return errFailedPermenant(fmt.Sprintf("received 5xx, error=%s", string(b)))
 }

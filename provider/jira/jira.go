@@ -10,6 +10,7 @@ import (
 	"github.com/deepsourcelabs/hermes/provider"
 	"github.com/mitchellh/mapstructure"
 	"github.com/segmentio/ksuid"
+	"golang.org/x/sync/errgroup"
 )
 
 type jiraSimple struct {
@@ -26,16 +27,18 @@ func NewJIRAProvider(httpClient *http.Client) provider.Provider {
 
 func (p *jiraSimple) Send(_ context.Context, notifier *domain.Notifier, body []byte) (*domain.Message, domain.IError) {
 	// Extract and validate the payload.
-	var payload = new(Payload)
+	payload := new(Payload)
+
 	if err := payload.Extract(body); err != nil {
 		return nil, err
 	}
+
 	if err := payload.Validate(); err != nil {
 		return nil, err
 	}
 
 	// Extract and validate the configuration.
-	var opts = new(Opts)
+	opts := new(Opts)
 	if err := opts.Extract(notifier.Config); err != nil {
 		return nil, err
 	}
@@ -80,11 +83,64 @@ type RelValue struct {
 	IssueTypes  Values `json:"issue_type"`
 }
 
-type Rel map[string]RelValue
+type Rel struct {
+	sync.Mutex
+	Store map[string]*RelValue
+}
 
 type OptValueResponse struct {
 	CloudID string `json:"cloud_id"`
 	Rel     Rel    `json:"_rel"`
+}
+
+func (p *jiraSimple) DoReq(opts *domain.NotifierSecret, sites Values) (*Rel, error) {
+	g1, g2 := new(errgroup.Group), new(errgroup.Group)
+
+	relValues := &Rel{Store: make(map[string]*RelValue)}
+	for _, site := range sites {
+		site := site
+		g1.Go(func() error {
+			result, err := p.getIssueTypes(opts.Token, site.ID)
+			if err != nil {
+				return err
+			}
+			relValues.Mutex.Lock()
+			v, ok := relValues.Store[site.ID]
+			if !ok {
+				v = &RelValue{IssueTypes: result}
+			} else {
+				v.IssueTypes = result
+			}
+			relValues.Mutex.Unlock()
+			return nil
+		})
+
+		g2.Go(func() error {
+			result, err := p.getProjectKeys(opts.Token, site.ID)
+			if err != nil {
+				return err
+			}
+			relValues.Mutex.Lock()
+			v, ok := relValues.Store[site.ID]
+			if !ok {
+				v = &RelValue{ProjectKeys: result}
+			} else {
+				v.ProjectKeys = result
+			}
+			relValues.Mutex.Unlock()
+			return nil
+		})
+	}
+
+	if err := g1.Wait(); err != nil {
+		return nil, err
+	}
+
+	if err := g2.Wait(); err != nil {
+		return nil, err
+	}
+
+	return relValues, nil
 }
 
 func (p *jiraSimple) GetOptValues(_ context.Context, opts *domain.NotifierSecret) (map[string]interface{}, error) {
@@ -93,106 +149,82 @@ func (p *jiraSimple) GetOptValues(_ context.Context, opts *domain.NotifierSecret
 		return nil, err
 	}
 
-	relValues := Rel{}
-
-	itChan := make(chan Values, 10)
-	pkChan := make(chan Values, 10)
-
-	for idx := range sites {
-		go p.getIssueTypes(opts.Token, sites[idx].ID, itChan)
-		if err != nil {
-			return nil, err
-		}
-		go p.getProjectKeys(opts.Token, sites[idx].ID, pkChan)
-		if err != nil {
-			return nil, err
-		}
-
-	}
-
-	wg := new(sync.WaitGroup)
-	for idx := range sites {
-		projectKeys := Values{}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			projectKeys = <-pkChan
-		}()
-		issueTypes := <-itChan
-		wg.Wait()
-		relValues[sites[idx].ID] = RelValue{
-			ProjectKeys: projectKeys,
-			IssueTypes:  issueTypes,
-		}
+	response, err := p.DoReq(opts, sites)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"cloud_id": sites,
-		"_rel": map[string]interface{}{
-			"cloud_id": relValues,
+			"cloud_id": sites,
+			"_rel":     map[string]interface{}{"cloud_id": response.Store},
 		},
-	}, nil
+		nil
 }
 
 func (p *jiraSimple) getSites(token string) (Values, error) {
-	sites := Values{}
-	request := &AccessibleResourcesRequest{
-		BearerToken: token,
-	}
+	request := &AccessibleResourcesRequest{BearerToken: token}
 	response, err := p.Client.GetAccessibleResources(request)
 	if err != nil {
 		return nil, err
 	}
+
+	sites := make([]Value, 0, len(*response))
 	for idx := range *response {
-		sites = append(sites, Value{
-			ID:   (*response)[idx].ID,
-			Name: (*response)[idx].Name,
-		})
+		sites = append(sites,
+			Value{
+				ID:   (*response)[idx].ID,
+				Name: (*response)[idx].Name,
+			},
+		)
 	}
 	return sites, nil
 }
 
-func (p *jiraSimple) getIssueTypes(token string, cloudID string, itChan chan Values) error {
-	issueTypes := Values{}
-
+func (p *jiraSimple) getIssueTypes(token, cloudID string) (Values, error) {
 	request := &GetIssueTypesRequest{
 		BearerToken: token,
 		CloudID:     cloudID,
 	}
+
 	response, err := p.Client.GetIssueTypes(request)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	for i, _ := range *response {
-		issueTypes = append(issueTypes, Value{
-			ID:   (*response)[i].ID,
-			Name: (*response)[i].Name,
-		})
+
+	issueTypes := make([]Value, 0, len(*response))
+	for i := range *response {
+		issueTypes = append(issueTypes,
+			Value{
+				ID:   (*response)[i].ID,
+				Name: (*response)[i].Name,
+			},
+		)
 	}
-	itChan <- issueTypes
-	return nil
+	return issueTypes, nil
 }
 
-func (p *jiraSimple) getProjectKeys(token string, cloudID string, pkChan chan Values) error {
-	projectKeys := Values{}
+func (p *jiraSimple) getProjectKeys(token, cloudID string) (Values, error) {
 	request := &GetProjectsRequest{
 		BearerToken: token,
 		CloudID:     cloudID,
 	}
+
 	response, err := p.Client.GetProjects(request)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
 	values := (*response).Values
-	for i, _ := range values {
-		projectKeys = append(projectKeys, Value{
-			ID:   values[i].Key,
-			Name: values[i].Name,
-		})
+
+	projectKeys := make([]Value, 0, len(values))
+	for i := range values {
+		projectKeys = append(projectKeys,
+			Value{
+				ID:   values[i].Key,
+				Name: values[i].Name,
+			},
+		)
 	}
-	pkChan <- projectKeys
-	return nil
+	return projectKeys, nil
 }
 
 // Payload defines the primary content payload for the JIRA provider.
@@ -235,7 +267,7 @@ type Opts struct {
 
 func (o *Opts) Extract(c *domain.NotifierConfiguration) domain.IError {
 	if c == nil {
-		return errFailedOptsValidation("notifier config emtpy")
+		return errFailedOptsValidation("notifier config empty")
 	}
 	if err := mapstructure.Decode(c.Opts, o); err != nil {
 		return errFailedOptsValidation("failed to decode configuration")
@@ -251,7 +283,7 @@ func (o *Opts) Validate() domain.IError {
 		return errFailedOptsValidation("options empty")
 	}
 	if o.IssueType == "" || o.ProjectKey == "" {
-		return errFailedOptsValidation("issue_type or project_key is emtpy")
+		return errFailedOptsValidation("issue_type or project_key is empty")
 	}
 
 	if o.Secret == nil || o.Secret.Token == "" {
