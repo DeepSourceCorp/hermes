@@ -85,7 +85,7 @@ type RelValue struct {
 
 type Rel struct {
 	sync.Mutex
-	Store map[string]*RelValue
+	Data map[string]*RelValue
 }
 
 type OptValueResponse struct {
@@ -93,10 +93,15 @@ type OptValueResponse struct {
 	Rel     Rel    `json:"_rel"`
 }
 
-func (p *jiraSimple) DoReq(opts *domain.NotifierSecret, sites Values) (*Rel, error) {
+func (p *jiraSimple) GetOptValues(_ context.Context, opts *domain.NotifierSecret) (map[string]interface{}, error) {
+	sites, err := p.getSites(opts.Token)
+	if err != nil {
+		return nil, err
+	}
+
 	g1, g2 := new(errgroup.Group), new(errgroup.Group)
 
-	relValues := &Rel{Store: make(map[string]*RelValue)}
+	relValues := &Rel{Data: make(map[string]*RelValue)}
 	for _, site := range sites {
 		site := site
 		g1.Go(func() error {
@@ -105,11 +110,11 @@ func (p *jiraSimple) DoReq(opts *domain.NotifierSecret, sites Values) (*Rel, err
 				return err
 			}
 			relValues.Mutex.Lock()
-			v, ok := relValues.Store[site.ID]
+			_, ok := relValues.Data[site.ID]
 			if !ok {
-				v = &RelValue{IssueTypes: result}
+				relValues.Data[site.ID] = &RelValue{IssueTypes: result}
 			} else {
-				v.IssueTypes = result
+				relValues.Data[site.ID].IssueTypes = result
 			}
 			relValues.Mutex.Unlock()
 			return nil
@@ -121,11 +126,11 @@ func (p *jiraSimple) DoReq(opts *domain.NotifierSecret, sites Values) (*Rel, err
 				return err
 			}
 			relValues.Mutex.Lock()
-			v, ok := relValues.Store[site.ID]
+			_, ok := relValues.Data[site.ID]
 			if !ok {
-				v = &RelValue{ProjectKeys: result}
+				relValues.Data[site.ID] = &RelValue{ProjectKeys: result}
 			} else {
-				v.ProjectKeys = result
+				relValues.Data[site.ID].ProjectKeys = result
 			}
 			relValues.Mutex.Unlock()
 			return nil
@@ -140,23 +145,9 @@ func (p *jiraSimple) DoReq(opts *domain.NotifierSecret, sites Values) (*Rel, err
 		return nil, err
 	}
 
-	return relValues, nil
-}
-
-func (p *jiraSimple) GetOptValues(_ context.Context, opts *domain.NotifierSecret) (map[string]interface{}, error) {
-	sites, err := p.getSites(opts.Token)
-	if err != nil {
-		return nil, err
-	}
-
-	response, err := p.DoReq(opts, sites)
-	if err != nil {
-		return nil, err
-	}
-
 	return map[string]interface{}{
 			"cloud_id": sites,
-			"_rel":     map[string]interface{}{"cloud_id": response.Store},
+			"_rel":     map[string]interface{}{"cloud_id": relValues.Data},
 		},
 		nil
 }
