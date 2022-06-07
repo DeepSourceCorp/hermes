@@ -52,7 +52,7 @@ func Duration(seconds float64) string {
 }
 
 func Plural(quantity float64, singular, plural string) string {
-	var suffix = PluralWord(quantity, singular, plural)
+	suffix := PluralWord(quantity, singular, plural)
 	return fmt.Sprintf("%d %s", int(quantity), suffix)
 }
 

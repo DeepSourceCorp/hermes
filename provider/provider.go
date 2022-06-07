@@ -9,7 +9,7 @@ import (
 
 type Provider interface {
 	Send(context.Context, *domain.Notifier, []byte) (*domain.Message, domain.IError)
-	GetOptValues(context.Context, *domain.NotifierSecret) (*map[string]interface{}, error)
+	GetOptValues(context.Context, *domain.NotifierSecret) (map[string]interface{}, error)
 }
 
 type IHTTPClient interface {

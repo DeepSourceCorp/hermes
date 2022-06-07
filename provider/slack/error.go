@@ -23,15 +23,19 @@ func NewErr(statusCode int, systemCode, message, internal string, isFatal bool) 
 func (e *slackError) Message() string {
 	return e.message
 }
+
 func (e *slackError) IsFatal() bool {
 	return e.isFatal
 }
+
 func (e *slackError) StatusCode() int {
 	return e.statusCode
 }
+
 func (e *slackError) Error() string {
 	return e.internal
 }
+
 func (e *slackError) SystemCode() string {
 	return e.systemCode
 }

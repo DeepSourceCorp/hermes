@@ -11,8 +11,10 @@ import (
 	"github.com/deepsourcelabs/hermes/provider"
 )
 
-const postIssueURL = "https://api.atlassian.com/ex/jira/%s/rest/api/3/issue"
-const accessibleResourcesURL = "https://api.atlassian.com/oauth/token/accessible-resources"
+const (
+	postIssueURL           = "https://api.atlassian.com/ex/jira/%s/rest/api/3/issue"
+	accessibleResourcesURL = "https://api.atlassian.com/oauth/token/accessible-resources"
+)
 
 type Client struct {
 	HTTPClient provider.IHTTPClient
@@ -67,7 +69,7 @@ func (c *Client) CreateIssue(request *CreateIssueRequest) (*CreateIssueResponse,
 		return nil, handleHTTPFailure(resp)
 	}
 
-	var response = new(CreateIssueResponse)
+	response := new(CreateIssueResponse)
 	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
 		return nil, errFailedPermenant("success but failed to parse response body")
 	}
@@ -105,7 +107,7 @@ func (c *Client) GetAccessibleResources(request *AccessibleResourcesRequest) (*A
 		return nil, handleHTTPFailure(resp)
 	}
 
-	var response = new(AccessibleResourcesResponse)
+	response := new(AccessibleResourcesResponse)
 	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
 		return nil, errFailedPermenant("success but failed to parse response body")
 	}

@@ -21,18 +21,23 @@ func NewErr(statusCode int, systemCode, message, internal string, isFatal bool) 
 		isFatal:    isFatal,
 	}
 }
+
 func (e *serviceError) Message() string {
 	return e.message
 }
+
 func (e *serviceError) IsFatal() bool {
 	return e.isFatal
 }
+
 func (e *serviceError) StatusCode() int {
 	return e.statusCode
 }
+
 func (e *serviceError) Error() string {
 	return e.message
 }
+
 func (e *serviceError) SystemCode() string {
 	return e.systemCode
 }

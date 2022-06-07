@@ -112,6 +112,7 @@ func TestDuration(t *testing.T) {
 		})
 	}
 }
+
 func TestPlural(t *testing.T) {
 	type args struct {
 		quantity float64
@@ -142,6 +143,7 @@ func TestPlural(t *testing.T) {
 		})
 	}
 }
+
 func TestPluralWord(t *testing.T) {
 	type args struct {
 		quantity float64
@@ -172,6 +174,7 @@ func TestPluralWord(t *testing.T) {
 		})
 	}
 }
+
 func TestTruncateQuantity(t *testing.T) {
 	type args struct {
 		quantity float64

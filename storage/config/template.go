@@ -26,9 +26,10 @@ func (store *templateStore) Create(ctx context.Context, tmpl *domain.Template) d
 }
 
 func (store *templateStore) GetByID(ctx context.Context, id string) (*domain.Template, domain.IError) {
-	var t = new(config.Template)
+	t := new(config.Template)
 
 	for _, v := range store.cfg.Templates {
+		v := v
 		if v.ID == id {
 			t = &v
 			break
