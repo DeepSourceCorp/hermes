@@ -54,8 +54,12 @@ type IssueType struct {
 }
 
 type Fields struct {
-	Project     Project                `json:"project"`
-	IssueType   IssueType              `json:"issuetype"`
+	Project struct {
+		Key string `json:"key"`
+	} `json:"project"`
+	IssueType struct {
+		ID string `json:"id"`
+	} `json:"issuetype"`
 	Summary     string                 `json:"summary"`
 	Description map[string]interface{} `json:"description"`
 }

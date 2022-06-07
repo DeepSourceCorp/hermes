@@ -49,8 +49,12 @@ func (p *jiraSimple) Send(_ context.Context, notifier *domain.Notifier, body []b
 
 	request := &CreateIssueRequest{
 		Fields: Fields{
-			Project:     Project{Key: opts.ProjectKey},
-			IssueType:   IssueType{Name: opts.IssueType},
+			Project: struct {
+				Key string "json:\"key\""
+			}{Key: opts.ProjectKey},
+			IssueType: struct {
+				ID string "json:\"id\""
+			}{ID: opts.IssueType},
 			Summary:     payload.Summary,
 			Description: payload.Description,
 		},
