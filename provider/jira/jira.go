@@ -3,8 +3,8 @@ package jira
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/deepsourcelabs/hermes/domain"
 	"github.com/deepsourcelabs/hermes/provider"
@@ -68,57 +68,131 @@ func (p *jiraSimple) Send(_ context.Context, notifier *domain.Notifier, body []b
 	}, nil
 }
 
-func (p *jiraSimple) GetOptValues(_ context.Context, opts *domain.NotifierSecret) (*map[string]interface{}, error) {
-	acessibleResourcesRequest := &AccessibleResourcesRequest{
-		BearerToken: opts.Token,
-	}
-	accessibleResourcesResponse, err := p.Client.GetAccessibleResources(acessibleResourcesRequest)
+type Value struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type Values []Value
+
+type RelValue struct {
+	ProjectKeys Values `json:"project_key"`
+	IssueTypes  Values `json:"issue_type"`
+}
+
+type Rel map[string]RelValue
+
+type OptValueResponse struct {
+	CloudID string `json:"cloud_id"`
+	Rel     Rel    `json:"_rel"`
+}
+
+func (p *jiraSimple) GetOptValues(_ context.Context, opts *domain.NotifierSecret) (map[string]interface{}, error) {
+	sites, err := p.getSites(opts.Token)
 	if err != nil {
-		fmt.Println("foobar0: ", err)
 		return nil, err
 	}
-	sites := []map[string]string{}
-	siteOptValues := map[string]map[string][]map[string]string{}
-	for _, site := range *accessibleResourcesResponse {
-		sites = append(sites, map[string]string{"id": site.ID, "name": site.Name})
-		issueTypesResponse, err := p.Client.GetIssueTypes(&GetIssueTypesRequest{BearerToken: opts.Token, CloudID: site.ID})
+
+	relValues := Rel{}
+
+	itChan := make(chan Values, 10)
+	pkChan := make(chan Values, 10)
+
+	for idx := range sites {
+		go p.getIssueTypes(opts.Token, sites[idx].ID, itChan)
 		if err != nil {
-			fmt.Println("foobar1: ", err)
 			return nil, err
 		}
-		issueTypes := []map[string]string{}
-		for _, it := range *issueTypesResponse {
-			issueTypes = append(issueTypes, map[string]string{
-				"id":   it.ID,
-				"name": it.Name,
-			})
-		}
-
-		projects, err := p.Client.GetProjects(&GetProjectsRequest{BearerToken: opts.Token, CloudID: site.ID})
+		go p.getProjectKeys(opts.Token, sites[idx].ID, pkChan)
 		if err != nil {
-			fmt.Println("foobar2: ", err)
 			return nil, err
 		}
-		projectKeys := []map[string]string{}
-		for _, p := range projects.Values {
-			projectKeys = append(projectKeys, map[string]string{
-				"id":   p.Key,
-				"name": p.Name,
-			})
-		}
 
-		siteOptValues[site.ID] = map[string][]map[string]string{
-			"project_key": projectKeys,
-			"issue_type":  issueTypes,
+	}
+
+	wg := new(sync.WaitGroup)
+	for idx := range sites {
+		projectKeys := Values{}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			projectKeys = <-pkChan
+		}()
+		issueTypes := <-itChan
+		wg.Wait()
+		relValues[sites[idx].ID] = RelValue{
+			ProjectKeys: projectKeys,
+			IssueTypes:  issueTypes,
 		}
 	}
 
-	return &map[string]interface{}{
+	return map[string]interface{}{
 		"cloud_id": sites,
 		"_rel": map[string]interface{}{
-			"cloud_id": siteOptValues,
+			"cloud_id": relValues,
 		},
 	}, nil
+}
+
+func (p *jiraSimple) getSites(token string) (Values, error) {
+	sites := Values{}
+	request := &AccessibleResourcesRequest{
+		BearerToken: token,
+	}
+	response, err := p.Client.GetAccessibleResources(request)
+	if err != nil {
+		return nil, err
+	}
+	for idx := range *response {
+		sites = append(sites, Value{
+			ID:   (*response)[idx].ID,
+			Name: (*response)[idx].Name,
+		})
+	}
+	return sites, nil
+}
+
+func (p *jiraSimple) getIssueTypes(token string, cloudID string, itChan chan Values) error {
+	issueTypes := Values{}
+
+	request := &GetIssueTypesRequest{
+		BearerToken: token,
+		CloudID:     cloudID,
+	}
+	response, err := p.Client.GetIssueTypes(request)
+	if err != nil {
+		return err
+	}
+	for i, _ := range *response {
+		issueTypes = append(issueTypes, Value{
+			ID:   (*response)[i].ID,
+			Name: (*response)[i].Name,
+		})
+	}
+	itChan <- issueTypes
+	return nil
+}
+
+func (p *jiraSimple) getProjectKeys(token string, cloudID string, pkChan chan Values) error {
+	projectKeys := Values{}
+	request := &GetProjectsRequest{
+		BearerToken: token,
+		CloudID:     cloudID,
+	}
+	response, err := p.Client.GetProjects(request)
+	if err != nil {
+		return err
+	}
+
+	values := (*response).Values
+	for i, _ := range values {
+		projectKeys = append(projectKeys, Value{
+			ID:   values[i].Key,
+			Name: values[i].Name,
+		})
+	}
+	pkChan <- projectKeys
+	return nil
 }
 
 // Payload defines the primary content payload for the JIRA provider.

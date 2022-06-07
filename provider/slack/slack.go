@@ -107,7 +107,7 @@ func (p *Payload) Validate() domain.IError {
 	return nil
 }
 
-func (p *defaultSlack) GetOptValues(_ context.Context, secret *domain.NotifierSecret) (*map[string]interface{}, error) {
+func (p *defaultSlack) GetOptValues(_ context.Context, secret *domain.NotifierSecret) (map[string]interface{}, error) {
 	request := &GetChannelsRequest{
 		BearerToken: secret.Token,
 	}
@@ -124,5 +124,5 @@ func (p *defaultSlack) GetOptValues(_ context.Context, secret *domain.NotifierSe
 			"name": v.Name,
 		})
 	}
-	return &map[string]interface{}{"channel": channels}, nil
+	return map[string]interface{}{"channel": channels}, nil
 }
