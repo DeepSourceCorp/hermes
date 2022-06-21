@@ -15,7 +15,6 @@ func (*Go) Execute(pattern string, params interface{}) ([]byte, error) {
 		"pluralWord":       PluralWord,
 		"truncateQuantity": TruncateQuantity,
 	}).Parse(pattern)
-
 	if err != nil {
 		return nil, err
 	}

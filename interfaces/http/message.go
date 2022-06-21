@@ -20,7 +20,7 @@ func NewMessageHandler(messageService service.MessageService) MessageHandler {
 func (handler *messageHandler) PostMessage() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		var request = new(service.SendMessageRequest)
+		request := new(service.SendMessageRequest)
 		if err := c.Bind(request); err != nil {
 			return c.JSON(http.StatusBadRequest, ErrorResponse{"request malformed"})
 		}

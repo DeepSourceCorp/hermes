@@ -46,7 +46,6 @@ func TestAppConfig_Validate(t *testing.T) {
 
 func TestPGConfig_GetDSN(t *testing.T) {
 	t.Run("get dsn", func(t *testing.T) {
-
 		want := "postgres://hermes:password@localhost:5432/hermesDB"
 
 		pgConfig := &PGConfig{
@@ -95,6 +94,5 @@ func TestAppConfig_ReadEnv(t *testing.T) {
 		if !reflect.DeepEqual(appConfig.Postgres, want) {
 			t.Errorf("AppConfig.ReadEnv().Postgres = %v, want %v", appConfig.Postgres, want)
 		}
-
 	})
 }

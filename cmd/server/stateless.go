@@ -8,7 +8,7 @@ import (
 	"github.com/deepsourcelabs/hermes/service"
 	configStore "github.com/deepsourcelabs/hermes/storage/config"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 )
 
 func StartStatelessMode(cfg *config.AppConfig, e *echo.Echo) error {

@@ -66,7 +66,6 @@ func TestTemplateConfig_ReadYAML(t *testing.T) {
 			t.Errorf("TemplateConfig.ReadYAML() unexpected error = %v,", err)
 		}
 	})
-
 }
 
 func TestInitTemplateConfig(t *testing.T) {

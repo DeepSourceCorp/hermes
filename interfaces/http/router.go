@@ -24,7 +24,7 @@ func NewRouter(
 }
 
 func (r *router) AddRoutes(e *echo.Echo) {
-	//templates
+	// templates
 	e.POST("/templates", r.templateHandler.PostTemplate())
 	e.POST("/tenants/:tenant_id/messages", r.messageHandler.PostMessage())
 }

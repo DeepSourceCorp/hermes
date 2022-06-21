@@ -19,18 +19,23 @@ func NewErr(statusCode int, systemCode, message, internal string, isFatal bool) 
 		isFatal:    isFatal,
 	}
 }
+
 func (e *jiraError) Message() string {
 	return e.message
 }
+
 func (e *jiraError) IsFatal() bool {
 	return e.isFatal
 }
+
 func (e *jiraError) StatusCode() int {
 	return e.statusCode
 }
+
 func (e *jiraError) Error() string {
 	return e.internal
 }
+
 func (e *jiraError) SystemCode() string {
 	return e.systemCode
 }

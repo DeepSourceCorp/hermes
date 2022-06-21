@@ -20,8 +20,8 @@ type GetProviderReqeuest struct {
 }
 
 type GetProviderResponse struct {
-	Type   string                  `json:"type"`
-	Values *map[string]interface{} `json:"values"`
+	Type   string                 `json:"type"`
+	Values map[string]interface{} `json:"values"`
 }
 
 type providerService struct{}
@@ -30,7 +30,7 @@ func NewProviderService() ProviderService {
 	return &providerService{}
 }
 
-func (service *providerService) GetProvider(ctx context.Context, request *GetProviderReqeuest) (*GetProviderResponse, domain.IError) {
+func (*providerService) GetProvider(ctx context.Context, request *GetProviderReqeuest) (*GetProviderResponse, domain.IError) {
 	provider := newProvider(request.Type)
 	response, err := provider.GetOptValues(ctx, &domain.NotifierSecret{Token: request.Token})
 	if err != nil {

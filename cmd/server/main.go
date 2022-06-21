@@ -2,11 +2,10 @@ package main
 
 import (
 	"flag"
+	"os"
 
 	"github.com/labstack/echo-contrib/prometheus"
-	"github.com/labstack/gommon/log"
-
-	"os"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/deepsourcelabs/hermes/config"
 	"github.com/labstack/echo/v4"
@@ -14,8 +13,7 @@ import (
 )
 
 func main() {
-
-	var isStateless = flag.Bool("stateless", true, "-stateless")
+	isStateless := flag.Bool("stateless", true, "-stateless")
 
 	flag.Parse()
 

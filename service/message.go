@@ -21,8 +21,8 @@ func NewMessageService(templateRepository domain.TemplateRepository) MessageServ
 }
 
 type SendMessageRequest struct {
-	TenantID   string                  `param:"tenant_id"`
-	Payload    *map[string]interface{} `json:"payload"`
+	TenantID   string                 `param:"tenant_id"`
+	Payload    map[string]interface{} `json:"payload"`
 	Recipients []struct {
 		Notifier *domain.Notifier `json:"notifier"`
 		Template *domain.Template `json:"template"`
@@ -109,7 +109,7 @@ func (service *messageService) getTemplate(
 }
 
 func (*messageService) getBody(
-	_ context.Context, t *domain.Template, payload *map[string]interface{},
+	_ context.Context, t *domain.Template, payload map[string]interface{},
 ) ([]byte, domain.IError) {
 	templater := t.GetTemplater()
 	body, err := templater.Execute(t.Pattern, payload)

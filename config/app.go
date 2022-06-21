@@ -41,7 +41,7 @@ type AppConfig struct {
 }
 
 func (config *AppConfig) ReadEnv() error {
-	var k = koanf.New(".")
+	k := koanf.New(".")
 	k.Load(env.Provider(envPrefix, ".", func(s string) string {
 		return strings.Replace(strings.ToLower(
 			strings.TrimPrefix(s, envPrefix)), "__", ".", -1)

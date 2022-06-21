@@ -13,9 +13,9 @@ import (
 	"github.com/deepsourcelabs/hermes/provider"
 )
 
-type mockHttp struct{}
+type mockHTTP struct{}
 
-func (*mockHttp) Do(_ *http.Request) (*http.Response, error) {
+func (*mockHTTP) Do(_ *http.Request) (*http.Response, error) {
 	return &http.Response{
 		Body:       io.NopCloser(bytes.NewReader([]byte("{\"ok\":true}"))),
 		StatusCode: http.StatusOK,
@@ -28,16 +28,17 @@ func (*errHTTP) Do(_ *http.Request) (*http.Response, error) {
 	return nil, errors.New("test")
 }
 
-func Test_jiraSimple_Send(t *testing.T) {
-
+func TestJIRASimpleSend(t *testing.T) {
 	type fields struct {
 		httpClient provider.IHTTPClient
 	}
+
 	type args struct {
 		ctx      context.Context
 		notifier *domain.Notifier
 		body     []byte
 	}
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -48,7 +49,7 @@ func Test_jiraSimple_Send(t *testing.T) {
 		{
 			name: "valid request",
 			fields: fields{
-				httpClient: new(mockHttp),
+				httpClient: new(mockHTTP),
 			},
 			args: args{
 				ctx: context.Background(),
@@ -67,7 +68,7 @@ func Test_jiraSimple_Send(t *testing.T) {
 		{
 			name: "no project_key",
 			fields: fields{
-				httpClient: new(mockHttp),
+				httpClient: new(mockHTTP),
 			},
 			args: args{
 				ctx: context.Background(),
@@ -86,7 +87,7 @@ func Test_jiraSimple_Send(t *testing.T) {
 		{
 			name: "no issue_type",
 			fields: fields{
-				httpClient: new(mockHttp),
+				httpClient: new(mockHTTP),
 			},
 			args: args{
 				ctx: context.Background(),
@@ -105,7 +106,7 @@ func Test_jiraSimple_Send(t *testing.T) {
 		{
 			name: "no summary in body",
 			fields: fields{
-				httpClient: new(mockHttp),
+				httpClient: new(mockHTTP),
 			},
 			args: args{
 				ctx: context.Background(),
@@ -124,7 +125,7 @@ func Test_jiraSimple_Send(t *testing.T) {
 		{
 			name: "no secret in config",
 			fields: fields{
-				httpClient: new(mockHttp),
+				httpClient: new(mockHTTP),
 			},
 			args: args{
 				ctx: context.Background(),
@@ -143,7 +144,7 @@ func Test_jiraSimple_Send(t *testing.T) {
 		{
 			name: "config not set",
 			fields: fields{
-				httpClient: new(mockHttp),
+				httpClient: new(mockHTTP),
 			},
 			args: args{
 				ctx: context.Background(),
@@ -157,7 +158,7 @@ func Test_jiraSimple_Send(t *testing.T) {
 		{
 			name: "opts not set",
 			fields: fields{
-				httpClient: new(mockHttp),
+				httpClient: new(mockHTTP),
 			},
 			args: args{
 				ctx: context.Background(),
@@ -171,7 +172,7 @@ func Test_jiraSimple_Send(t *testing.T) {
 		{
 			name: "no secret in config",
 			fields: fields{
-				httpClient: new(mockHttp),
+				httpClient: new(mockHTTP),
 			},
 			args: args{
 				ctx: context.Background(),
@@ -190,7 +191,7 @@ func Test_jiraSimple_Send(t *testing.T) {
 		{
 			name: "token not set",
 			fields: fields{
-				httpClient: new(mockHttp),
+				httpClient: new(mockHTTP),
 			},
 			args: args{
 				ctx: context.Background(),
@@ -209,7 +210,7 @@ func Test_jiraSimple_Send(t *testing.T) {
 		{
 			name: "body empty",
 			fields: fields{
-				httpClient: new(mockHttp),
+				httpClient: new(mockHTTP),
 			},
 			args: args{
 				ctx: context.Background(),
@@ -228,7 +229,7 @@ func Test_jiraSimple_Send(t *testing.T) {
 		{
 			name: "no description in body",
 			fields: fields{
-				httpClient: new(mockHttp),
+				httpClient: new(mockHTTP),
 			},
 			args: args{
 				ctx: context.Background(),
@@ -286,7 +287,7 @@ func Test_jiraSimple_Send(t *testing.T) {
 }
 
 func TestOpts_Extract(t *testing.T) {
-	var got = new(Opts)
+	got := new(Opts)
 	secret := &domain.NotifierSecret{Token: "token"}
 	want := &Opts{
 		ProjectKey: "abc",

@@ -6,14 +6,16 @@ import (
 
 	"github.com/deepsourcelabs/hermes/domain"
 	"github.com/fsnotify/fsnotify"
-	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
 var templateConfig *TemplateConfig
 
-var osReadFile readFileFn = os.ReadFile
-var osStat statFn = os.Stat
+var (
+	osReadFile readFileFn = os.ReadFile
+	osStat     statFn     = os.Stat
+)
 
 type Template struct {
 	ID                 string                `yaml:"id,omitempty"`
@@ -40,12 +42,12 @@ func (tc *TemplateConfig) Validate() error {
 	return nil
 }
 
-func (config *TemplateConfig) ReadYAML(configPath string) error {
+func (tc *TemplateConfig) ReadYAML(configPath string) error {
 	configBytes, err := osReadFile(path.Join(configPath, "./template.yaml"))
 	if err != nil {
 		return err
 	}
-	return yaml.Unmarshal(configBytes, &config)
+	return yaml.Unmarshal(configBytes, &tc)
 }
 
 func InitTemplateConfig(templateConfigPath string) error {
@@ -103,10 +105,11 @@ func StartTemplateConfigWatcher(configPath string) error {
 			}
 		}
 	}()
-	err = watcher.Add(configPath)
-	if err != nil {
+
+	if err := watcher.Add(configPath); err != nil {
 		return err
 	}
+
 	<-done
 	return nil
 }

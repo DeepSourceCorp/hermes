@@ -25,7 +25,7 @@ func NewJIRAProvider(httpClient *http.Client) provider.Provider {
 
 func (p *jiraSimple) Send(_ context.Context, notifier *domain.Notifier, body []byte) (*domain.Message, domain.IError) {
 	// Extract and validate the payload.
-	var payload = new(Payload)
+	payload := new(Payload)
 	if err := payload.Extract(body); err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func (p *jiraSimple) Send(_ context.Context, notifier *domain.Notifier, body []b
 	}
 
 	// Extract and validate the configuration.
-	var opts = new(Opts)
+	opts := new(Opts)
 	if err := opts.Extract(notifier.Config); err != nil {
 		return nil, err
 	}
@@ -67,8 +67,8 @@ func (p *jiraSimple) Send(_ context.Context, notifier *domain.Notifier, body []b
 	}, nil
 }
 
-func (p *jiraSimple) GetOptValues(context.Context, *domain.NotifierSecret) (*map[string]interface{}, error) {
-	return &map[string]interface{}{}, nil
+func (p *jiraSimple) GetOptValues(context.Context, *domain.NotifierSecret) (map[string]interface{}, error) {
+	return map[string]interface{}{}, nil
 }
 
 // Payload defines the primary content payload for the JIRA provider.
@@ -111,7 +111,7 @@ type Opts struct {
 
 func (o *Opts) Extract(c *domain.NotifierConfiguration) domain.IError {
 	if c == nil {
-		return errFailedOptsValidation("notifier config emtpy")
+		return errFailedOptsValidation("notifier config empty")
 	}
 	if err := mapstructure.Decode(c.Opts, o); err != nil {
 		return errFailedOptsValidation("failed to decode configuration")
@@ -127,7 +127,7 @@ func (o *Opts) Validate() domain.IError {
 		return errFailedOptsValidation("options empty")
 	}
 	if o.IssueType == "" || o.ProjectKey == "" {
-		return errFailedOptsValidation("issue_type or project_key is emtpy")
+		return errFailedOptsValidation("issue_type or project_key is empty")
 	}
 
 	if o.Secret == nil || o.Secret.Token == "" {

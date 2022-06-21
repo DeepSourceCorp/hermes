@@ -53,7 +53,7 @@ func (c *Client) SendMessage(request *SendMessageRequest) (*SendMessageResponse,
 		return nil, handleHTTPFailure(resp)
 	}
 
-	var response = new(SendMessageResponse)
+	response := new(SendMessageResponse)
 	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
 		return nil, errFailedSendPermanent(err.Error())
 	}
@@ -108,7 +108,7 @@ func (c *Client) GetChannels(request *GetChannelsRequest) (*GetChannelsResponse,
 		return nil, handleHTTPFailure(resp)
 	}
 
-	var response = new(GetChannelsResponse)
+	response := new(GetChannelsResponse)
 	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
 		return nil, errFailedOptsFetch(err.Error())
 	}

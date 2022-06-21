@@ -10,7 +10,7 @@ type sqlError struct {
 	isFatal    bool
 }
 
-func NewErr(statusCode int, systemCode string, message string, internal string, isFatal bool) domain.IError {
+func NewErr(statusCode int, systemCode, message, internal string, isFatal bool) domain.IError {
 	return &sqlError{
 		message:    message,
 		statusCode: statusCode,
@@ -19,24 +19,27 @@ func NewErr(statusCode int, systemCode string, message string, internal string, 
 		isFatal:    isFatal,
 	}
 }
+
 func (e *sqlError) Message() string {
 	return e.message
 }
+
 func (e *sqlError) IsFatal() bool {
 	return e.isFatal
 }
+
 func (e *sqlError) StatusCode() int {
 	return e.statusCode
 }
+
 func (e *sqlError) Error() string {
 	return e.internal
 }
+
 func (e *sqlError) SystemCode() string {
 	return e.systemCode
 }
 
-var (
-	errDBErr = func(internal string) domain.IError {
-		return NewErr(500, "HE-STO-50010", "something went wrong", internal, true)
-	}
-)
+var errDBErr = func(internal string) domain.IError {
+	return NewErr(500, "HE-STO-50010", "something went wrong", internal, true)
+}

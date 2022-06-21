@@ -20,7 +20,7 @@ func GetDB() *gorm.DB {
 	return nil
 }
 
-// InitPG initialises the postgres connection for the app.
+// InitPG initializes the postgres connection for the app.
 func InitPG() error {
 	dbURL := "postgres://hermes:password@localhost:5432/hermes"
 	db, err := gorm.Open(postgres.Open(dbURL), &gorm.Config{})

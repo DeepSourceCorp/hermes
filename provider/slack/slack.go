@@ -24,7 +24,7 @@ func NewSlackProvider(httpClient provider.IHTTPClient) provider.Provider {
 
 func (p *defaultSlack) Send(_ context.Context, notifier *domain.Notifier, body []byte) (*domain.Message, domain.IError) {
 	// Extract and validate the payload.
-	var payload = new(Payload)
+	payload := new(Payload)
 	if err := payload.Extract(body); err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func (p *defaultSlack) Send(_ context.Context, notifier *domain.Notifier, body [
 	}
 
 	// Extract and validate the configuration.
-	var opts = new(Opts)
+	opts := new(Opts)
 	if err := opts.Extract(notifier.Config); err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ type Opts struct {
 
 func (o *Opts) Extract(c *domain.NotifierConfiguration) domain.IError {
 	if c == nil {
-		return errFailedOptsValidation("notifier config emtpy")
+		return errFailedOptsValidation("notifier config empty")
 	}
 	if err := mapstructure.Decode(c.Opts, o); err != nil {
 		return errFailedOptsValidation("failed to decode configuration")
@@ -83,7 +83,7 @@ func (o *Opts) Validate() domain.IError {
 		return errFailedOptsValidation("secret not defined in configuration")
 	}
 	if o.Channel == "" {
-		return errFailedOptsValidation("channel is emtpy")
+		return errFailedOptsValidation("channel is empty")
 	}
 	return nil
 }
@@ -107,7 +107,7 @@ func (p *Payload) Validate() domain.IError {
 	return nil
 }
 
-func (p *defaultSlack) GetOptValues(_ context.Context, secret *domain.NotifierSecret) (*map[string]interface{}, error) {
+func (p *defaultSlack) GetOptValues(_ context.Context, secret *domain.NotifierSecret) (map[string]interface{}, error) {
 	request := &GetChannelsRequest{
 		BearerToken: secret.Token,
 	}
@@ -124,5 +124,5 @@ func (p *defaultSlack) GetOptValues(_ context.Context, secret *domain.NotifierSe
 			"name": v.Name,
 		})
 	}
-	return &map[string]interface{}{"channel": channels}, nil
+	return map[string]interface{}{"channel": channels}, nil
 }
