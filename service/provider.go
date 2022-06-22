@@ -20,8 +20,8 @@ type GetProviderReqeuest struct {
 }
 
 type GetProviderResponse struct {
-	Type   string                  `json:"type"`
-	Values *map[string]interface{} `json:"values"`
+	Type   string                 `json:"type"`
+	Values map[string]interface{} `json:"values"`
 }
 
 type providerService struct{}
