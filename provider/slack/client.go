@@ -75,7 +75,7 @@ func handleHTTPFailure(response *http.Response) domain.IError {
 	return errFailedSendPermanent(fmt.Sprintf("received 5xx, error=%s", string(b)))
 }
 
-const getChannelsURL = "https://slack.com/api/conversations.list?exclude_archived=true&limit=1000"
+const getChannelsURL = "https://slack.com/api/conversations.list?types=public_channel,private_channel&exclude_archived=true&limit=1000"
 
 type GetChannelsRequest struct {
 	BearerToken string `json:"_"`
