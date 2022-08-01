@@ -92,7 +92,7 @@ type GetChannelsResponse struct {
 }
 
 func (c *Client) GetChannels(request *GetChannelsRequest) (*GetChannelsResponse, domain.IError) {
-	req, err := http.NewRequest("GET", getChannelsURL, nil)
+	req, err := http.NewRequest("GET", getChannelsURL, http.NoBody)
 	if err != nil {
 		return nil, errFailedOptsFetch(err.Error())
 	}
