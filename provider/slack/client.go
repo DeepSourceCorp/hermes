@@ -33,12 +33,13 @@ type SendMessageResponse struct {
 func (c *Client) SendMessage(request *SendMessageRequest) (*SendMessageResponse, domain.IError) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(request); err != nil {
-		log.Error(err.Error())
+		log.Errorf("slack: failed encoding request: %v", err)
 		return nil, errFailedSendPermanent(err.Error())
 	}
 
 	req, err := http.NewRequest("POST", postMessageURL, &buf)
 	if err != nil {
+		log.Errorf("slack: sending request: %v", err)
 		return nil, errFailedSendPermanent(err.Error())
 	}
 
@@ -47,6 +48,7 @@ func (c *Client) SendMessage(request *SendMessageRequest) (*SendMessageResponse,
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
+		log.Errorf("slack: something went wrong sending request: %v", err)
 		return nil, errFailedSendTemporary("something went wrong while sending messsage to slack")
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 399 {
@@ -55,6 +57,7 @@ func (c *Client) SendMessage(request *SendMessageRequest) (*SendMessageResponse,
 
 	var response = new(SendMessageResponse)
 	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
+		log.Errorf("slack: failed decoding response: %v", err)
 		return nil, errFailedSendPermanent(err.Error())
 	}
 	return response, nil
@@ -63,15 +66,18 @@ func (c *Client) SendMessage(request *SendMessageRequest) (*SendMessageResponse,
 func handleHTTPFailure(response *http.Response) domain.IError {
 	b, err := io.ReadAll(response.Body)
 	if err != nil {
+		log.Errorf("slack: failed reading response body: %v", err)
 		return errFailedSendPermanent(err.Error())
 	}
 
 	if response.StatusCode > 500 {
 		if err != nil {
+			log.Errorf("slack: failed with 5xx response code: %v", err)
 			return errFailedSendTemporary(fmt.Sprintf("received 5xx, error=%s", string(b)))
 		}
 	}
 
+	log.Errorf("slack: failed with 5xx response code: %v", err)
 	return errFailedSendPermanent(fmt.Sprintf("received 5xx, error=%s", string(b)))
 }
 
@@ -94,6 +100,7 @@ type GetChannelsResponse struct {
 func (c *Client) GetChannels(request *GetChannelsRequest) (*GetChannelsResponse, domain.IError) {
 	req, err := http.NewRequest("GET", getChannelsURL, http.NoBody)
 	if err != nil {
+		log.Errorf("slack: failed creating request for options: %v", err)
 		return nil, errFailedOptsFetch(err.Error())
 	}
 
@@ -102,14 +109,17 @@ func (c *Client) GetChannels(request *GetChannelsRequest) (*GetChannelsResponse,
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
+		log.Errorf("slack: failed sending request for options: %v", err)
 		return nil, errFailedOptsFetch(err.Error())
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 399 {
+		log.Errorf("slack: Non 2xx response while fetching options: %v", err)
 		return nil, handleHTTPFailure(resp)
 	}
 
 	var response = new(GetChannelsResponse)
 	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
+		log.Errorf("slack: Non 2xx response while fetching options: %v", err)
 		return nil, errFailedOptsFetch(err.Error())
 	}
 
