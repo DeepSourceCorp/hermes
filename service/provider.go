@@ -8,6 +8,8 @@ import (
 	"github.com/deepsourcelabs/hermes/provider"
 	"github.com/deepsourcelabs/hermes/provider/jira"
 	"github.com/deepsourcelabs/hermes/provider/slack"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type ProviderService interface {
@@ -34,6 +36,7 @@ func (service *providerService) GetProvider(ctx context.Context, request *GetPro
 	provider := newProvider(request.Type)
 	response, err := provider.GetOptValues(ctx, &domain.NotifierSecret{Token: request.Token})
 	if err != nil {
+		log.Errorf("Failed to get options values: %v", err)
 		return nil, errUnprocessable(err.Error())
 	}
 	return &GetProviderResponse{Type: string(request.Type), Values: response}, nil

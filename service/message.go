@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/deepsourcelabs/hermes/domain"
+	log "github.com/sirupsen/logrus"
 )
 
 type MessageService interface {
@@ -52,22 +53,26 @@ func (service *messageService) Send(
 	for _, recipient := range request.Recipients {
 		notifier, err := service.getNotifier(ctx, recipient.Notifier)
 		if err != nil {
+			log.Errorf("Failed to get notifier %v: %v", recipient.Notifier, err)
 			return domain.Messages{}, err
 		}
 
 		template, err := service.getTemplate(ctx, recipient.Template)
 		if err != nil {
+			log.Errorf("Failed to get template %v: %v", recipient.Template, err)
 			return domain.Messages{}, err
 		}
 
 		body, err := service.getBody(ctx, template, request.Payload)
 		if err != nil {
+			log.Errorf("Failed to get body for request: %v", err)
 			return []domain.Message{}, err
 		}
 		provider := newProvider(recipient.Notifier.Type)
 
 		message, err := provider.Send(ctx, notifier, body)
 		if err != nil {
+			log.Errorf("Failed to send message: %v", err)
 			return nil, err
 		}
 
@@ -114,6 +119,7 @@ func (*messageService) getBody(
 	templater := t.GetTemplater()
 	body, err := templater.Execute(t.Pattern, payload)
 	if err != nil {
+		log.Errorf("Failed to execute template: %v", err)
 		return nil, errUnprocessable("template execution failed")
 	}
 	return body, nil

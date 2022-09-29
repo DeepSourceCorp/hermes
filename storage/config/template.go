@@ -6,6 +6,8 @@ import (
 
 	"github.com/deepsourcelabs/hermes/config"
 	"github.com/deepsourcelabs/hermes/domain"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type templateStore struct {
@@ -37,6 +39,7 @@ func (store *templateStore) GetByID(ctx context.Context, id string) (*domain.Tem
 
 	pattern, err := store.fnReadFile(t.Path)
 	if err != nil {
+		log.Errorf("Failed to read file %v: %v", t.Path, err)
 		return nil, errDBErr(err.Error())
 	}
 	return &domain.Template{

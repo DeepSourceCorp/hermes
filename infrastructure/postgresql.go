@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"gorm.io/gorm"
 
+	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 )
 
@@ -25,6 +26,7 @@ func InitPG() error {
 	dbURL := "postgres://hermes:password@localhost:5432/hermes"
 	db, err := gorm.Open(postgres.Open(dbURL), &gorm.Config{})
 	if err != nil {
+		log.Errorf("Failed to open postgres connection: %v", err)
 		return err
 	}
 	pgClient = &PGClient{

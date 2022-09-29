@@ -10,12 +10,14 @@ import (
 	sqlStore "github.com/deepsourcelabs/hermes/storage/sql"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func StartStatefulMode(cfg *config.AppConfig, e *echo.Echo) error {
 	if cfg.Postgres == nil {
+		log.Error("postgres configuration not set")
 		return errors.New("postgres configuration not set")
 	}
 	db, err := gorm.Open(
@@ -23,6 +25,7 @@ func StartStatefulMode(cfg *config.AppConfig, e *echo.Echo) error {
 		&gorm.Config{SkipDefaultTransaction: true},
 	)
 	if err != nil {
+		log.Errorf("Couldn't connect to postgres: %v", err)
 		return err
 	}
 

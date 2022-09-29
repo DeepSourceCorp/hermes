@@ -46,6 +46,7 @@ func main() {
 	}
 
 	if err := StartStatefulMode(cfg, e); err != nil {
+		log.Error("failed to start hermes in stateful mode, exiting")
 		panic(err)
 	}
 }
