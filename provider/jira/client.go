@@ -126,7 +126,7 @@ type AccessibleResourcesRequest struct {
 type AccessibleResourcesResponse []Site
 
 func (c *Client) GetAccessibleResources(request *AccessibleResourcesRequest) (*AccessibleResourcesResponse, domain.IError) {
-	req, err := http.NewRequest("GET", accessibleResourcesURL, nil)
+	req, err := http.NewRequest("GET", accessibleResourcesURL, http.NoBody)
 	if err != nil {
 		log.Errorf("jira: failed requesting accessible resources: %v", err)
 		return nil, errFailedTemporary("failed to send request")
@@ -166,7 +166,7 @@ type GetProjectsResponse struct {
 }
 
 func (c *Client) GetProjects(request *GetProjectsRequest) (*GetProjectsResponse, domain.IError) {
-	req, err := http.NewRequest("GET", fmt.Sprintf(projectSearchURL, request.CloudID), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf(projectSearchURL, request.CloudID), http.NoBody)
 	if err != nil {
 		log.Errorf("jira: failed requesting projects: %v", err)
 		return nil, errFailedTemporary("failed to send request")
@@ -202,7 +202,7 @@ type GetIssueTypesRequest struct {
 type GetIssueTypesResponse []IssueType
 
 func (c *Client) GetIssueTypes(request *GetIssueTypesRequest) (*GetIssueTypesResponse, domain.IError) {
-	req, err := http.NewRequest("GET", fmt.Sprintf(issueTypesResourceURL, request.CloudID), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf(issueTypesResourceURL, request.CloudID), http.NoBody)
 	if err != nil {
 		log.Errorf("jira: failed requesting issue types: %v", err)
 		return nil, errFailedTemporary("failed to send request")

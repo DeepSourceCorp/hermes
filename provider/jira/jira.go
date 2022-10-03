@@ -223,7 +223,7 @@ func (p *jiraSimple) getProjectKeys(token, cloudID string) (Values, error) {
 		log.Errorf("jira: getting projects: %v", err)
 		return nil, err
 	}
-	values := (*response).Values
+	values := response.Values
 
 	projectKeys := make([]Value, 0, len(values))
 	for i := range values {
