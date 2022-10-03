@@ -9,7 +9,7 @@ import (
 	"github.com/deepsourcelabs/hermes/service"
 	sqlStore "github.com/deepsourcelabs/hermes/storage/sql"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

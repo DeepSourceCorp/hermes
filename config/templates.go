@@ -6,7 +6,7 @@ import (
 
 	"github.com/deepsourcelabs/hermes/domain"
 	"github.com/fsnotify/fsnotify"
-	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 

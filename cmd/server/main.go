@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"github.com/labstack/echo-contrib/prometheus"
-	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 
 	"os"
 
