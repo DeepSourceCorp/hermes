@@ -11,6 +11,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/segmentio/ksuid"
 	"golang.org/x/sync/errgroup"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type jiraSimple struct {
@@ -30,20 +32,24 @@ func (p *jiraSimple) Send(_ context.Context, notifier *domain.Notifier, body []b
 	payload := new(Payload)
 
 	if err := payload.Extract(body); err != nil {
+		log.Errorf("jira: extracting payload: %v", err)
 		return nil, err
 	}
 
 	if err := payload.Validate(); err != nil {
+		log.Errorf("jira: validating payload: %v", err)
 		return nil, err
 	}
 
 	// Extract and validate the configuration.
 	opts := new(Opts)
 	if err := opts.Extract(notifier.Config); err != nil {
+		log.Errorf("jira: extracting options: %v", err)
 		return nil, err
 	}
 
 	if err := opts.Validate(); err != nil {
+		log.Errorf("jira: validating options: %v", err)
 		return nil, err
 	}
 
@@ -64,6 +70,7 @@ func (p *jiraSimple) Send(_ context.Context, notifier *domain.Notifier, body []b
 
 	response, err := p.Client.CreateIssue(request)
 	if err != nil {
+		log.Errorf("jira: creating issue: %v", err)
 		return nil, err
 	}
 
@@ -100,6 +107,7 @@ type OptValueResponse struct {
 func (p *jiraSimple) GetOptValues(_ context.Context, opts *domain.NotifierSecret) (map[string]interface{}, error) {
 	sites, err := p.getSites(opts.Token)
 	if err != nil {
+		log.Errorf("jira: getting options: sites: %v", err)
 		return nil, err
 	}
 
@@ -111,6 +119,7 @@ func (p *jiraSimple) GetOptValues(_ context.Context, opts *domain.NotifierSecret
 		g1.Go(func() error {
 			result, err := p.getIssueTypes(opts.Token, site.ID)
 			if err != nil {
+				log.Errorf("jira: getting options: issueTypes: %v", err)
 				return err
 			}
 			relValues.Mutex.Lock()
@@ -127,6 +136,7 @@ func (p *jiraSimple) GetOptValues(_ context.Context, opts *domain.NotifierSecret
 		g2.Go(func() error {
 			result, err := p.getProjectKeys(opts.Token, site.ID)
 			if err != nil {
+				log.Errorf("jira: getting options: projectKeys: %v", err)
 				return err
 			}
 			relValues.Mutex.Lock()
@@ -142,10 +152,12 @@ func (p *jiraSimple) GetOptValues(_ context.Context, opts *domain.NotifierSecret
 	}
 
 	if err := g1.Wait(); err != nil {
+		log.Errorf("jira: waiting for g1: %v", err)
 		return nil, err
 	}
 
 	if err := g2.Wait(); err != nil {
+		log.Errorf("jira: waiting for g2: %v", err)
 		return nil, err
 	}
 
@@ -160,6 +172,7 @@ func (p *jiraSimple) getSites(token string) (Values, error) {
 	request := &AccessibleResourcesRequest{BearerToken: token}
 	response, err := p.Client.GetAccessibleResources(request)
 	if err != nil {
+		log.Errorf("jira: getting accessible resources: %v", err)
 		return nil, err
 	}
 
@@ -183,6 +196,7 @@ func (p *jiraSimple) getIssueTypes(token, cloudID string) (Values, error) {
 
 	response, err := p.Client.GetIssueTypes(request)
 	if err != nil {
+		log.Errorf("jira: getting issue types: %v", err)
 		return nil, err
 	}
 
@@ -206,9 +220,10 @@ func (p *jiraSimple) getProjectKeys(token, cloudID string) (Values, error) {
 
 	response, err := p.Client.GetProjects(request)
 	if err != nil {
+		log.Errorf("jira: getting projects: %v", err)
 		return nil, err
 	}
-	values := (*response).Values
+	values := response.Values
 
 	projectKeys := make([]Value, 0, len(values))
 	for i := range values {
@@ -231,6 +246,7 @@ type Payload struct {
 // Extract unmarshals body to JIRA payload.
 func (p *Payload) Extract(body []byte) domain.IError {
 	if err := json.Unmarshal(body, p); err != nil {
+		log.Errorf("jira: unmarshalling body: %v", err)
 		return errFailedBodyValidation(err.Error())
 	}
 	return nil
@@ -265,13 +281,14 @@ func (o *Opts) Extract(c *domain.NotifierConfiguration) domain.IError {
 		return errFailedOptsValidation("notifier config empty")
 	}
 	if err := mapstructure.Decode(c.Opts, o); err != nil {
+		log.Errorf("jira: decoding options: %v", err)
 		return errFailedOptsValidation("failed to decode configuration")
 	}
 	o.Secret = c.Secret
 	return nil
 }
 
-// ValidateAndExtractOpts validates the notifier configuration and returns
+// Validate validates the notifier configuration and returns
 // JIRA specific opts.
 func (o *Opts) Validate() domain.IError {
 	if o == nil {

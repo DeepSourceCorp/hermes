@@ -9,6 +9,8 @@ import (
 
 	"github.com/deepsourcelabs/hermes/domain"
 	"github.com/deepsourcelabs/hermes/provider"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -79,11 +81,13 @@ type CreateIssueResponse struct {
 func (c *Client) CreateIssue(request *CreateIssueRequest) (*CreateIssueResponse, domain.IError) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(request); err != nil {
+		log.Errorf("jira: encoding request: %v", err)
 		return nil, errFailedPermenant("failed to encode request")
 	}
 
 	req, err := http.NewRequest("POST", fmt.Sprintf(postIssueURL, request.CloudID), &buf)
 	if err != nil {
+		log.Errorf("jira: failed to send request: %v", err)
 		return nil, errFailedTemporary("failed to send request")
 	}
 
@@ -92,6 +96,7 @@ func (c *Client) CreateIssue(request *CreateIssueRequest) (*CreateIssueResponse,
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
+		log.Errorf("jira: something went wrong while creating the issue: %v", err)
 		return nil, errFailedTemporary("something went wrong while creating the issue")
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 399 {
@@ -100,6 +105,7 @@ func (c *Client) CreateIssue(request *CreateIssueRequest) (*CreateIssueResponse,
 
 	response := new(CreateIssueResponse)
 	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
+		log.Errorf("jira: failed to parse response body: %v", err)
 		return nil, errFailedPermenant("success but failed to parse response body")
 	}
 	return response, nil
@@ -120,14 +126,16 @@ type AccessibleResourcesRequest struct {
 type AccessibleResourcesResponse []Site
 
 func (c *Client) GetAccessibleResources(request *AccessibleResourcesRequest) (*AccessibleResourcesResponse, domain.IError) {
-	req, err := http.NewRequest("GET", accessibleResourcesURL, nil)
+	req, err := http.NewRequest("GET", accessibleResourcesURL, http.NoBody)
 	if err != nil {
+		log.Errorf("jira: failed requesting accessible resources: %v", err)
 		return nil, errFailedTemporary("failed to send request")
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", request.BearerToken))
 	req.Header.Add("Content-Type", "application/json; charset=utf-8")
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
+		log.Errorf("jira: something went wrong requesting accessible resources: %v", err)
 		return nil, errFailedTemporary("something went wrong")
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 399 {
@@ -136,6 +144,7 @@ func (c *Client) GetAccessibleResources(request *AccessibleResourcesRequest) (*A
 
 	response := new(AccessibleResourcesResponse)
 	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
+		log.Errorf("jira: failed decoding accessible resources response: %v", err)
 		return nil, errFailedPermenant("success but failed to parse response body")
 	}
 
@@ -157,8 +166,9 @@ type GetProjectsResponse struct {
 }
 
 func (c *Client) GetProjects(request *GetProjectsRequest) (*GetProjectsResponse, domain.IError) {
-	req, err := http.NewRequest("GET", fmt.Sprintf(projectSearchURL, request.CloudID), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf(projectSearchURL, request.CloudID), http.NoBody)
 	if err != nil {
+		log.Errorf("jira: failed requesting projects: %v", err)
 		return nil, errFailedTemporary("failed to send request")
 	}
 
@@ -167,6 +177,7 @@ func (c *Client) GetProjects(request *GetProjectsRequest) (*GetProjectsResponse,
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
+		log.Errorf("jira: something went wrong requesting projects: %v", err)
 		return nil, errFailedTemporary("something went wrong")
 	}
 
@@ -176,6 +187,7 @@ func (c *Client) GetProjects(request *GetProjectsRequest) (*GetProjectsResponse,
 
 	response := new(GetProjectsResponse)
 	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
+		log.Errorf("jira: failed decoding projects response: %v", err)
 		return nil, errFailedPermenant("success but failed to parse response body")
 	}
 
@@ -190,8 +202,9 @@ type GetIssueTypesRequest struct {
 type GetIssueTypesResponse []IssueType
 
 func (c *Client) GetIssueTypes(request *GetIssueTypesRequest) (*GetIssueTypesResponse, domain.IError) {
-	req, err := http.NewRequest("GET", fmt.Sprintf(issueTypesResourceURL, request.CloudID), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf(issueTypesResourceURL, request.CloudID), http.NoBody)
 	if err != nil {
+		log.Errorf("jira: failed requesting issue types: %v", err)
 		return nil, errFailedTemporary("failed to send request")
 	}
 
@@ -200,6 +213,7 @@ func (c *Client) GetIssueTypes(request *GetIssueTypesRequest) (*GetIssueTypesRes
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
+		log.Errorf("jira: something went wrong requesting issue types: %v", err)
 		return nil, errFailedTemporary("something went wrong")
 	}
 
@@ -209,6 +223,7 @@ func (c *Client) GetIssueTypes(request *GetIssueTypesRequest) (*GetIssueTypesRes
 
 	response := new(GetIssueTypesResponse)
 	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
+		log.Errorf("jira: failed decoding issue types response: %v", err)
 		return nil, errFailedPermenant("success but failed to parse response body")
 	}
 
@@ -218,6 +233,7 @@ func (c *Client) GetIssueTypes(request *GetIssueTypesRequest) (*GetIssueTypesRes
 func handleHTTPFailure(response *http.Response) domain.IError {
 	b, err := io.ReadAll(response.Body)
 	if err != nil {
+		log.Errorf("jira: received non 2xx, failed to parse response: %v", err)
 		return errFailedPermenant("received non 2xx, failed to parse response")
 	}
 
@@ -228,5 +244,6 @@ func handleHTTPFailure(response *http.Response) domain.IError {
 	// 	}
 	// }
 
+	log.Errorf("jira: received 5xx: %v", err)
 	return errFailedPermenant(fmt.Sprintf("received 5xx, error=%s", string(b)))
 }

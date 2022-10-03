@@ -6,7 +6,7 @@ import (
 
 	"github.com/deepsourcelabs/hermes/domain"
 	"github.com/fsnotify/fsnotify"
-	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -29,11 +29,13 @@ type TemplateConfig struct {
 func (tc *TemplateConfig) Validate() error {
 	workingDir, err := os.Getwd()
 	if err != nil {
+		log.Errorf("Failed to get working directory: %v", err)
 		return err
 	}
 	for _, t := range tc.Templates {
 		_, err := osStat(path.Join(workingDir, t.Path))
 		if err != nil {
+			log.Errorf("Failed to get file: %v", err)
 			return err
 		}
 	}
@@ -43,6 +45,7 @@ func (tc *TemplateConfig) Validate() error {
 func (config *TemplateConfig) ReadYAML(configPath string) error {
 	configBytes, err := osReadFile(path.Join(configPath, "./template.yaml"))
 	if err != nil {
+		log.Errorf("Failed to read templates.yaml: %v", err)
 		return err
 	}
 	return yaml.Unmarshal(configBytes, &config)
@@ -51,9 +54,11 @@ func (config *TemplateConfig) ReadYAML(configPath string) error {
 func InitTemplateConfig(templateConfigPath string) error {
 	tempConfig := new(TemplateConfig)
 	if err := tempConfig.ReadYAML(templateConfigPath); err != nil {
+		log.Errorf("Failed to read template config file: %v", err)
 		return err
 	}
 	if err := tempConfig.Validate(); err != nil {
+		log.Errorf("Failed to validate template config file: %v", err)
 		return err
 	}
 	templateConfig = tempConfig
@@ -78,6 +83,7 @@ func (*templateConfigFactory) GetTemplateConfig() *TemplateConfig {
 func StartTemplateConfigWatcher(configPath string) error {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
+		log.Errorf("Failed to start template directory watcher: %v", err)
 		return err
 	}
 	defer watcher.Close()
@@ -105,6 +111,7 @@ func StartTemplateConfigWatcher(configPath string) error {
 	}()
 	err = watcher.Add(configPath)
 	if err != nil {
+		log.Errorf("Failed to add %v to watcher: %v", configPath, err)
 		return err
 	}
 	<-done

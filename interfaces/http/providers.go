@@ -5,6 +5,7 @@ import (
 
 	"github.com/deepsourcelabs/hermes/service"
 	"github.com/labstack/echo/v4"
+	log "github.com/sirupsen/logrus"
 )
 
 type ProviderHandler interface {
@@ -26,6 +27,7 @@ func (handler *providerHandler) GetProviderHandler() echo.HandlerFunc {
 		ctx := c.Request().Context()
 		request := new(service.GetProviderReqeuest)
 		if err := c.Bind(request); err != nil {
+			log.Errorf("Failed to bind request while getting provider handler: %v", err)
 			return c.JSON(http.StatusBadRequest, ErrorResponse{"request malformed"})
 		}
 		request.Token = c.Request().Header.Get("X-Notifier-Token")

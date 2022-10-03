@@ -6,6 +6,8 @@ import (
 
 	"github.com/deepsourcelabs/hermes/domain"
 	"github.com/segmentio/ksuid"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type CreateTemplateRequest struct {
@@ -36,6 +38,7 @@ func (svc *templateService) Create(ctx context.Context, request *CreateTemplateR
 		DateUpdated: time.Now(),
 	}
 	if err := svc.repository.Create(ctx, template); err != nil {
+		log.Errorf("Failed to create template: %v", err)
 		return nil, err
 	}
 	return template, nil
