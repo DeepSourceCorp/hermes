@@ -288,7 +288,7 @@ func (o *Opts) Extract(c *domain.NotifierConfiguration) domain.IError {
 	return nil
 }
 
-// ValidateAndExtractOpts validates the notifier configuration and returns
+// Validate validates the notifier configuration and returns
 // JIRA specific opts.
 func (o *Opts) Validate() domain.IError {
 	if o == nil {

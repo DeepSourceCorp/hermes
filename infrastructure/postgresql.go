@@ -13,7 +13,7 @@ type PGClient struct {
 	db *gorm.DB
 }
 
-// Returns the PGClient singleton.
+// GetDB returns the PGClient singleton.
 func GetDB() *gorm.DB {
 	if pgClient != nil {
 		return pgClient.db
@@ -24,7 +24,7 @@ func GetDB() *gorm.DB {
 // InitPG initialises the postgres connection for the app.
 func InitPG() error {
 	dbURL := "postgres://hermes:password@localhost:5432/hermes"
-	db, err := gorm.Open(postgres.Open(dbURL), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dbURL), &gorm.Config{SkipDefaultTransaction: true})
 	if err != nil {
 		log.Errorf("Failed to open postgres connection: %v", err)
 		return err
