@@ -1,0 +1,7 @@
+steps:
+## Build and push debian image
+- name: 'gcr.io/kaniko-project/executor:v0.16.0'
+  args:
+  - --destination=us.gcr.io/deepsource-production/hermes:$TAG_NAME
+  - --dockerfile=Dockerfile
+  - --cache=false
