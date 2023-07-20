@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/deepsourcelabs/hermes/domain"
 	"github.com/deepsourcelabs/hermes/provider"
@@ -15,7 +16,7 @@ import (
 
 const (
 	accessibleResourcesURL = "https://api.atlassian.com/oauth/token/accessible-resources"
-	projectSearchURL       = "https://api.atlassian.com/ex/jira/%s/rest/api/3/project/search?jql=&maxResults=500"
+	projectSearchURL       = "https://api.atlassian.com/ex/jira/%s/rest/api/3/project/search"
 	postIssueURL           = "https://api.atlassian.com/ex/jira/%s/rest/api/3/issue"
 	issueTypesResourceURL  = "https://api.atlassian.com/ex/jira/%s/rest/api/3/issuetype"
 )
@@ -159,13 +160,14 @@ type GetProjectsRequest struct {
 type GetProjectsResponse struct {
 	Self       string    `json:"self"`
 	MaxResults int       `json:"maxResults"`
+	NextPage   string    `json:"nextPage"`
 	StartAt    int       `json:"startAt"`
 	Total      int       `json:"total"`
 	IsLast     bool      `json:"isLast"`
 	Values     []Project `json:"values"`
 }
 
-func (c *Client) GetProjects(request *GetProjectsRequest) (*GetProjectsResponse, domain.IError) {
+func (c *Client) GetProjects(request *GetProjectsRequest) ([]Project, domain.IError) {
 	req, err := http.NewRequest("GET", fmt.Sprintf(projectSearchURL, request.CloudID), http.NoBody)
 	if err != nil {
 		log.Errorf("jira: failed requesting projects: %v", err)
@@ -175,23 +177,39 @@ func (c *Client) GetProjects(request *GetProjectsRequest) (*GetProjectsResponse,
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", request.BearerToken))
 	req.Header.Add("Content-Type", "application/json; charset=utf-8")
 
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		log.Errorf("jira: something went wrong requesting projects: %v", err)
-		return nil, errFailedTemporary("something went wrong")
+	var projects []Project
+	for {
+		resp, err := c.HTTPClient.Do(req)
+		if err != nil {
+			log.Errorf("jira: something went wrong requesting projects: %v", err)
+			return nil, errFailedTemporary("something went wrong")
+		}
+
+		if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
+			return nil, handleHTTPFailure(resp)
+		}
+
+		response := new(GetProjectsResponse)
+		if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
+			log.Errorf("jira: failed decoding projects response: %v", err)
+			return nil, errFailedPermenant("success but failed to parse response body")
+		}
+
+		projects = append(projects, response.Values...)
+
+		if response.IsLast {
+			break
+		}
+
+		nextURL, err := url.Parse(response.NextPage)
+		if err != nil {
+			log.Errorf("jira: failed to parse next url in projects response: %v", err)
+			break
+		}
+		req.URL = nextURL
 	}
 
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
-		return nil, handleHTTPFailure(resp)
-	}
-
-	response := new(GetProjectsResponse)
-	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
-		log.Errorf("jira: failed decoding projects response: %v", err)
-		return nil, errFailedPermenant("success but failed to parse response body")
-	}
-
-	return response, nil
+	return projects, nil
 }
 
 type GetIssueTypesRequest struct {
