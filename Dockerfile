@@ -1,4 +1,4 @@
-FROM 1.20.6-alpine3.18 AS builder
+FROM golang:1.20.6-alpine3.18 AS builder
 
 ARG USER=runner
 
