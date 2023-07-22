@@ -1,6 +1,6 @@
 module github.com/deepsourcelabs/hermes
 
-go 1.17
+go 1.20
 
 require (
 	github.com/fsnotify/fsnotify v1.5.1
@@ -32,7 +32,6 @@ require (
 	github.com/jackc/pgx/v4 v4.15.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.4 // indirect
-	github.com/kr/pretty v0.2.1 // indirect
 	github.com/labstack/gommon v0.3.1 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
