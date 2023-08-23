@@ -27,13 +27,8 @@ type TemplateConfig struct {
 }
 
 func (tc *TemplateConfig) Validate() error {
-	workingDir, err := os.Getwd()
-	if err != nil {
-		log.Errorf("Failed to get working directory: %v", err)
-		return err
-	}
 	for _, t := range tc.Templates {
-		_, err := osStat(path.Join(workingDir, t.Path))
+		_, err := osStat(t.Path)
 		if err != nil {
 			log.Errorf("Failed to get file: %v", err)
 			return err
