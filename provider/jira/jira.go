@@ -4,13 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"sync"
 
 	"github.com/deepsourcelabs/hermes/domain"
 	"github.com/deepsourcelabs/hermes/provider"
 	"github.com/mitchellh/mapstructure"
 	"github.com/segmentio/ksuid"
-	"golang.org/x/sync/errgroup"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -89,19 +87,22 @@ type Value struct {
 
 type Values []Value
 
-type RelValue struct {
-	ProjectKeys Values `json:"project_key"`
-	IssueTypes  Values `json:"issue_type"`
+type Rel struct {
+	CloudID    map[string]CloudIDInfo    `json:"cloud_id" mapstructure:"cloud_id"`
+	ProjectKey map[string]ProjectKeyInfo `json:"project_key" mapstructure:"project_key"`
 }
 
-type Rel struct {
-	sync.Mutex
-	Data map[string]*RelValue
+type ProjectKeyInfo struct {
+	IssueType []Value `json:"issue_type" mapstructure:"issue_type"`
+}
+
+type CloudIDInfo struct {
+	ProjectKey []Value `json:"project_key" mapstructure:"project_key"`
 }
 
 type OptValueResponse struct {
-	CloudID string `json:"cloud_id"`
-	Rel     Rel    `json:"_rel"`
+	Rel     Rel    `json:"_rel" mapstructure:"_rel"`
+	CloudID Values `json:"cloud_id" mapstructure:"cloud_id"`
 }
 
 func (p *jiraSimple) GetOptValues(_ context.Context, opts *domain.NotifierSecret) (map[string]interface{}, error) {
@@ -111,61 +112,43 @@ func (p *jiraSimple) GetOptValues(_ context.Context, opts *domain.NotifierSecret
 		return nil, err
 	}
 
-	g1, g2 := new(errgroup.Group), new(errgroup.Group)
+	CloudIDProjectKeyMap := make(map[string]CloudIDInfo)
+	ProjectKeyIssueTypeMap := make(map[string]ProjectKeyInfo)
 
-	relValues := &Rel{Data: make(map[string]*RelValue)}
 	for _, site := range sites {
 		site := site
-		g1.Go(func() error {
-			result, err := p.getIssueTypes(opts.Token, site.ID)
-			if err != nil {
-				log.Errorf("jira: getting options: issueTypes: %v", err)
-				return err
-			}
-			relValues.Mutex.Lock()
-			_, ok := relValues.Data[site.ID]
-			if !ok {
-				relValues.Data[site.ID] = &RelValue{IssueTypes: result}
-			} else {
-				relValues.Data[site.ID].IssueTypes = result
-			}
-			relValues.Mutex.Unlock()
-			return nil
-		})
 
-		g2.Go(func() error {
-			result, err := p.getProjectKeys(opts.Token, site.ID)
-			if err != nil {
-				log.Errorf("jira: getting options: projectKeys: %v", err)
-				return err
+		projects, err := p.getProjects(opts.Token, site.ID)
+		if err != nil {
+			log.Errorf("jira: getting projects: %v", err)
+		}
+
+		var projectValues Values
+		for _, project := range projects {
+			projectValues = append(projectValues, Value{ID: project.Key, Name: project.Name})
+
+			var issueTypeValues Values
+			for _, issueType := range project.IssueTypes {
+				issueTypeValues = append(issueTypeValues, Value{ID: issueType.ID, Name: issueType.Name})
 			}
-			relValues.Mutex.Lock()
-			_, ok := relValues.Data[site.ID]
-			if !ok {
-				relValues.Data[site.ID] = &RelValue{ProjectKeys: result}
-			} else {
-				relValues.Data[site.ID].ProjectKeys = result
-			}
-			relValues.Mutex.Unlock()
-			return nil
-		})
+
+			ProjectKeyIssueTypeMap[project.Key] = ProjectKeyInfo{IssueType: issueTypeValues}
+		}
+		CloudIDProjectKeyMap[site.ID] = CloudIDInfo{ProjectKey: projectValues}
 	}
 
-	if err := g1.Wait(); err != nil {
-		log.Errorf("jira: waiting for g1: %v", err)
-		return nil, err
-	}
-
-	if err := g2.Wait(); err != nil {
-		log.Errorf("jira: waiting for g2: %v", err)
-		return nil, err
-	}
-
-	return map[string]interface{}{
-			"cloud_id": sites,
-			"_rel":     map[string]interface{}{"cloud_id": relValues.Data},
+	results := make(map[string]interface{})
+	if err := mapstructure.Decode(&OptValueResponse{
+		CloudID: sites,
+		Rel: Rel{
+			CloudID:    CloudIDProjectKeyMap,
+			ProjectKey: ProjectKeyIssueTypeMap,
 		},
-		nil
+	}, &results); err != nil {
+		log.Errorf("jira: mapstructure failed: %v", err)
+		return nil, err
+	}
+	return results, nil
 }
 
 func (p *jiraSimple) getSites(token string) (Values, error) {
@@ -188,52 +171,19 @@ func (p *jiraSimple) getSites(token string) (Values, error) {
 	return sites, nil
 }
 
-func (p *jiraSimple) getIssueTypes(token, cloudID string) (Values, error) {
-	request := &GetIssueTypesRequest{
-		BearerToken: token,
-		CloudID:     cloudID,
-	}
-
-	response, err := p.Client.GetIssueTypes(request)
-	if err != nil {
-		log.Errorf("jira: getting issue types: %v", err)
-		return nil, err
-	}
-
-	issueTypes := make([]Value, 0, len(*response))
-	for i := range *response {
-		issueTypes = append(issueTypes,
-			Value{
-				ID:   (*response)[i].ID,
-				Name: (*response)[i].Name,
-			},
-		)
-	}
-	return issueTypes, nil
-}
-
-func (p *jiraSimple) getProjectKeys(token, cloudID string) (Values, error) {
+func (p *jiraSimple) getProjects(token, cloudID string) ([]Project, error) {
 	request := &GetProjectsRequest{
 		BearerToken: token,
 		CloudID:     cloudID,
 	}
 
-	values, err := p.Client.GetProjects(request)
+	projects, err := p.Client.GetProjects(request)
 	if err != nil {
 		log.Errorf("jira: getting projects: %v", err)
 		return nil, err
 	}
 
-	projectKeys := make([]Value, 0, len(values))
-	for i := range values {
-		projectKeys = append(projectKeys,
-			Value{
-				ID:   values[i].Key,
-				Name: values[i].Name,
-			},
-		)
-	}
-	return projectKeys, nil
+	return projects, nil
 }
 
 // Payload defines the primary content payload for the JIRA provider.
