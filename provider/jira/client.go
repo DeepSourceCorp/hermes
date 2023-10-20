@@ -16,7 +16,7 @@ import (
 
 const (
 	accessibleResourcesURL = "https://api.atlassian.com/oauth/token/accessible-resources"
-	projectSearchURL       = "https://api.atlassian.com/ex/jira/%s/rest/api/3/project/search"
+	projectSearchURL       = "https://api.atlassian.com/ex/jira/%s/rest/api/3/project/search?expand=issueTypes"
 	postIssueURL           = "https://api.atlassian.com/ex/jira/%s/rest/api/3/issue"
 	issueTypesResourceURL  = "https://api.atlassian.com/ex/jira/%s/rest/api/3/issuetype"
 )
@@ -26,11 +26,12 @@ type Client struct {
 }
 
 type Project struct {
-	Expand     string `json:"expand"`
-	Self       string `json:"self"`
-	ID         string `json:"id"`
-	Key        string `json:"key"`
-	Name       string `json:"name"`
+	Expand     string      `json:"expand"`
+	Self       string      `json:"self"`
+	ID         string      `json:"id"`
+	Key        string      `json:"key"`
+	IssueTypes []IssueType `json:"issueTypes"`
+	Name       string      `json:"name"`
 	AvatarUrls struct {
 		Four8X48  string `json:"48x48"`
 		Two4X24   string `json:"24x24"`
@@ -45,15 +46,14 @@ type Project struct {
 }
 
 type IssueType struct {
-	Self             string `json:"self"`
-	ID               string `json:"id"`
-	Description      string `json:"description"`
-	IconURL          string `json:"iconUrl"`
-	Name             string `json:"name"`
-	UntranslatedName string `json:"untranslatedName"`
-	Subtask          bool   `json:"subtask"`
-	AvatarID         int    `json:"avatarId,omitempty"`
-	HierarchyLevel   int    `json:"hierarchyLevel"`
+	Self           string `json:"self"`
+	ID             string `json:"id"`
+	Description    string `json:"description"`
+	IconURL        string `json:"iconUrl"`
+	Name           string `json:"name"`
+	Subtask        bool   `json:"subtask"`
+	AvatarID       int    `json:"avatarId,omitempty"`
+	HierarchyLevel int    `json:"hierarchyLevel"`
 }
 
 type Fields struct {
@@ -208,7 +208,6 @@ func (c *Client) GetProjects(request *GetProjectsRequest) ([]Project, domain.IEr
 		}
 		req.URL = nextURL
 	}
-
 	return projects, nil
 }
 
