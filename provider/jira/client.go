@@ -18,7 +18,6 @@ const (
 	accessibleResourcesURL = "https://api.atlassian.com/oauth/token/accessible-resources"
 	projectSearchURL       = "https://api.atlassian.com/ex/jira/%s/rest/api/3/project/search?expand=issueTypes"
 	postIssueURL           = "https://api.atlassian.com/ex/jira/%s/rest/api/3/issue"
-	issueTypesResourceURL  = "https://api.atlassian.com/ex/jira/%s/rest/api/3/issuetype"
 )
 
 type Client struct {
@@ -209,42 +208,6 @@ func (c *Client) GetProjects(request *GetProjectsRequest) ([]Project, domain.IEr
 		req.URL = nextURL
 	}
 	return projects, nil
-}
-
-type GetIssueTypesRequest struct {
-	BearerToken string
-	CloudID     string
-}
-
-type GetIssueTypesResponse []IssueType
-
-func (c *Client) GetIssueTypes(request *GetIssueTypesRequest) (*GetIssueTypesResponse, domain.IError) {
-	req, err := http.NewRequest("GET", fmt.Sprintf(issueTypesResourceURL, request.CloudID), http.NoBody)
-	if err != nil {
-		log.Errorf("jira: failed requesting issue types: %v", err)
-		return nil, errFailedTemporary("failed to send request")
-	}
-
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", request.BearerToken))
-	req.Header.Add("Content-Type", "application/json; charset=utf-8")
-
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		log.Errorf("jira: something went wrong requesting issue types: %v", err)
-		return nil, errFailedTemporary("something went wrong")
-	}
-
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
-		return nil, handleHTTPFailure(resp)
-	}
-
-	response := new(GetIssueTypesResponse)
-	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
-		log.Errorf("jira: failed decoding issue types response: %v", err)
-		return nil, errFailedPermenant("success but failed to parse response body")
-	}
-
-	return response, nil
 }
 
 func handleHTTPFailure(response *http.Response) domain.IError {

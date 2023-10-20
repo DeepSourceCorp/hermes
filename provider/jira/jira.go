@@ -171,30 +171,6 @@ func (p *jiraSimple) getSites(token string) (Values, error) {
 	return sites, nil
 }
 
-func (p *jiraSimple) getIssueTypes(token, cloudID string) (Values, error) {
-	request := &GetIssueTypesRequest{
-		BearerToken: token,
-		CloudID:     cloudID,
-	}
-
-	response, err := p.Client.GetIssueTypes(request)
-	if err != nil {
-		log.Errorf("jira: getting issue types: %v", err)
-		return nil, err
-	}
-
-	issueTypes := make([]Value, 0, len(*response))
-	for i := range *response {
-		issueTypes = append(issueTypes,
-			Value{
-				ID:   (*response)[i].ID,
-				Name: (*response)[i].Name,
-			},
-		)
-	}
-	return issueTypes, nil
-}
-
 func (p *jiraSimple) getProjects(token, cloudID string) ([]Project, error) {
 	request := &GetProjectsRequest{
 		BearerToken: token,
@@ -208,30 +184,6 @@ func (p *jiraSimple) getProjects(token, cloudID string) ([]Project, error) {
 	}
 
 	return projects, nil
-}
-
-func (p *jiraSimple) getProjectKeys(token, cloudID string) (Values, error) {
-	request := &GetProjectsRequest{
-		BearerToken: token,
-		CloudID:     cloudID,
-	}
-
-	values, err := p.Client.GetProjects(request)
-	if err != nil {
-		log.Errorf("jira: getting projects: %v", err)
-		return nil, err
-	}
-
-	projectKeys := make([]Value, 0, len(values))
-	for i := range values {
-		projectKeys = append(projectKeys,
-			Value{
-				ID:   values[i].Key,
-				Name: values[i].Name,
-			},
-		)
-	}
-	return projectKeys, nil
 }
 
 // Payload defines the primary content payload for the JIRA provider.
