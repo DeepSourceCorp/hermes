@@ -55,6 +55,10 @@ type IssueType struct {
 	HierarchyLevel int    `json:"hierarchyLevel"`
 }
 
+type Reporter struct {
+	ID string `json:"id,omitempty"`
+}
+
 type Fields struct {
 	Project struct {
 		Key string `json:"key"`
@@ -62,6 +66,7 @@ type Fields struct {
 	IssueType struct {
 		ID string `json:"id"`
 	} `json:"issuetype"`
+	Reporter    *Reporter              `json:"reporter,omitempty"`
 	Summary     string                 `json:"summary"`
 	Description map[string]interface{} `json:"description"`
 }
