@@ -129,7 +129,9 @@ func (p *jiraSimple) GetOptValues(_ context.Context, opts *domain.NotifierSecret
 
 			var issueTypeValues Values
 			for _, issueType := range project.IssueTypes {
-				issueTypeValues = append(issueTypeValues, Value{ID: issueType.ID, Name: issueType.Name})
+				if !issueType.Subtask {
+					issueTypeValues = append(issueTypeValues, Value{ID: issueType.ID, Name: issueType.Name})
+				}
 			}
 
 			ProjectKeyIssueTypeMap[project.Key] = ProjectKeyInfo{IssueType: issueTypeValues}
