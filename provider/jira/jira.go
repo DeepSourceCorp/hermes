@@ -51,14 +51,20 @@ func (p *jiraSimple) Send(_ context.Context, notifier *domain.Notifier, body []b
 		return nil, err
 	}
 
+	reporter := (*Reporter)(nil)
+	if opts.ReporterID != "" {
+		reporter = &Reporter{ID: opts.ReporterID}
+	}
+
 	request := &CreateIssueRequest{
 		Fields: Fields{
 			Project: struct {
-				Key string "json:\"key\""
+				Key string `json:"key"`
 			}{Key: opts.ProjectKey},
 			IssueType: struct {
-				ID string "json:\"id\""
+				ID string `json:"id"`
 			}{ID: opts.IssueType},
+			Reporter:    reporter,
 			Summary:     payload.Summary,
 			Description: payload.Description,
 		},
@@ -225,6 +231,7 @@ type Opts struct {
 	ProjectKey string `mapstructure:"project_key"`
 	IssueType  string `mapstructure:"issue_type"`
 	CloudID    string `mapstructure:"cloud_id"`
+	ReporterID string `mapstructure:"reporter_id"`
 }
 
 func (o *Opts) Extract(c *domain.NotifierConfiguration) domain.IError {
