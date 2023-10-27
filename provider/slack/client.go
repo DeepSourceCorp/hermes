@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/deepsourcelabs/hermes/domain"
 	"github.com/deepsourcelabs/hermes/provider"
@@ -92,16 +93,28 @@ type Channel struct {
 	Name string `json:"name"`
 }
 
-type GetChannelsResponse struct {
-	Ok       bool      `json:"ok"`
-	Channels []Channel `json:"channels"`
+type ResponseMetadata struct {
+	NextCursor string `json:"next_cursor"`
 }
 
-func (c *Client) GetChannels(request *GetChannelsRequest) (*GetChannelsResponse, domain.IError) {
-	req, err := http.NewRequest("GET", getChannelsURL, http.NoBody)
+type GetChannelsResponse struct {
+	Ok               bool             `json:"ok"`
+	Channels         []Channel        `json:"channels"`
+	ResponseMetadata ResponseMetadata `json:"response_metadata"`
+}
+
+func (c *Client) getChannelsPage(request *GetChannelsRequest, cursor string) (*GetChannelsResponse, domain.IError) {
+	var response = new(GetChannelsResponse)
+
+	requestUrl := getChannelsURL
+	if cursor != "" {
+		requestUrl += "&cursor=" + url.QueryEscape(cursor)
+	}
+
+	req, err := http.NewRequest("GET", requestUrl, http.NoBody)
 	if err != nil {
 		log.Errorf("slack: failed creating request for options: %v", err)
-		return nil, errFailedOptsFetch(err.Error())
+		return response, errFailedOptsFetch(err.Error())
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", request.BearerToken))
@@ -110,18 +123,46 @@ func (c *Client) GetChannels(request *GetChannelsRequest) (*GetChannelsResponse,
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		log.Errorf("slack: failed sending request for options: %v", err)
-		return nil, errFailedOptsFetch(err.Error())
+		return response, errFailedOptsFetch(err.Error())
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode < 200 || resp.StatusCode > 399 {
 		log.Errorf("slack: Non 2xx response while fetching options: %v", err)
-		return nil, handleHTTPFailure(resp)
+		return response, handleHTTPFailure(resp)
 	}
 
-	var response = new(GetChannelsResponse)
 	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
 		log.Errorf("slack: Non 2xx response while fetching options: %v", err)
-		return nil, errFailedOptsFetch(err.Error())
+		return response, errFailedOptsFetch(err.Error())
 	}
 
 	return response, nil
+}
+
+func (c *Client) GetChannels(request *GetChannelsRequest) ([]map[string]string, domain.IError) {
+	var channels []map[string]string
+	cursor := ""
+
+	for {
+		response, err := c.getChannelsPage(request, cursor)
+		if err != nil {
+			log.Errorf("slack: Error fetching page %v: %v", cursor, err)
+			return channels, err
+		}
+
+		for _, v := range response.Channels {
+			channels = append(channels, map[string]string{
+				"id":   v.ID,
+				"name": v.Name,
+			})
+		}
+
+		cursor = response.ResponseMetadata.NextCursor
+		if cursor == "" {
+			break
+		}
+	}
+
+	return channels, nil
 }
