@@ -123,19 +123,11 @@ func (p *defaultSlack) GetOptValues(_ context.Context, secret *domain.NotifierSe
 	request := &GetChannelsRequest{
 		BearerToken: secret.Token,
 	}
-	response, err := p.Client.GetChannels(request)
+	channels, err := p.Client.GetChannels(request)
 	if err != nil {
 		log.Errorf("slack: failed to get channels : %v", err)
 		return nil, err
 	}
 
-	channels := []map[string]string{}
-
-	for _, v := range response.Channels {
-		channels = append(channels, map[string]string{
-			"id":   v.ID,
-			"name": v.Name,
-		})
-	}
 	return map[string]interface{}{"channel": channels}, nil
 }
