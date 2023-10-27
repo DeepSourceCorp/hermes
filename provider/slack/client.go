@@ -141,7 +141,7 @@ func (c *Client) getChannelsPage(request *GetChannelsRequest, cursor string) (*G
 }
 
 func (c *Client) GetChannels(request *GetChannelsRequest) ([]map[string]string, domain.IError) {
-	channels := []map[string]string{}
+	var channels []map[string]string
 	cursor := ""
 
 	for {
