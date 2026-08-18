@@ -1,6 +1,8 @@
 package slack
 
 import (
+	"context"
+	"errors"
 	"io"
 	"net/http"
 	"reflect"
@@ -15,6 +17,10 @@ type stubHTTPClient struct {
 	responses []*http.Response
 	requested []string
 	calls     int
+
+	// onCall runs after each request, so a test can cancel the listing at a
+	// chosen point in the pagination.
+	onCall func(calls int)
 }
 
 func (s *stubHTTPClient) Do(req *http.Request) (*http.Response, error) {
@@ -27,6 +33,9 @@ func (s *stubHTTPClient) Do(req *http.Request) (*http.Response, error) {
 
 	resp := s.responses[s.calls]
 	s.calls++
+	if s.onCall != nil {
+		s.onCall(s.calls)
+	}
 	return resp, nil
 }
 
@@ -74,7 +83,7 @@ func TestClient_GetChannels_PaginatesUntilCursorIsEmpty(t *testing.T) {
 		response(200, `{"ok":true,"channels":[{"id":"C2","name":"random"}]}`, nil),
 	)
 
-	got, err := client.GetChannels(&GetChannelsRequest{BearerToken: "xoxb-test"})
+	got, err := client.GetChannels(context.Background(), &GetChannelsRequest{BearerToken: "xoxb-test"})
 	if err != nil {
 		t.Fatalf("GetChannels() unexpected error = %v", err)
 	}
@@ -100,7 +109,7 @@ func TestClient_GetChannels_RetriesRateLimitedPage(t *testing.T) {
 		response(200, `{"ok":true,"channels":[{"id":"C2","name":"random"}]}`, nil),
 	)
 
-	got, err := client.GetChannels(&GetChannelsRequest{BearerToken: "xoxb-test"})
+	got, err := client.GetChannels(context.Background(), &GetChannelsRequest{BearerToken: "xoxb-test"})
 	if err != nil {
 		t.Fatalf("GetChannels() unexpected error = %v", err)
 	}
@@ -123,7 +132,7 @@ func TestClient_GetChannels_RetriesRateLimitedBodyOn200(t *testing.T) {
 		response(200, `{"ok":true,"channels":[{"id":"C1","name":"general"}]}`, nil),
 	)
 
-	got, err := client.GetChannels(&GetChannelsRequest{BearerToken: "xoxb-test"})
+	got, err := client.GetChannels(context.Background(), &GetChannelsRequest{BearerToken: "xoxb-test"})
 	if err != nil {
 		t.Fatalf("GetChannels() unexpected error = %v", err)
 	}
@@ -146,7 +155,7 @@ func TestClient_GetChannels_ReturnsPartialResultsWhenRetriesExhausted(t *testing
 		rateLimitedResponse("1"),
 	)
 
-	got, err := client.GetChannels(&GetChannelsRequest{BearerToken: "xoxb-test"})
+	got, err := client.GetChannels(context.Background(), &GetChannelsRequest{BearerToken: "xoxb-test"})
 	if err != nil {
 		t.Fatalf("GetChannels() unexpected error = %v, want partial success", err)
 	}
@@ -167,7 +176,7 @@ func TestClient_GetChannels_ErrorsWhenRateLimitedWithNoResults(t *testing.T) {
 		rateLimitedResponse("1"),
 	)
 
-	got, err := client.GetChannels(&GetChannelsRequest{BearerToken: "xoxb-test"})
+	got, err := client.GetChannels(context.Background(), &GetChannelsRequest{BearerToken: "xoxb-test"})
 	if err == nil {
 		t.Fatalf("GetChannels() error = nil, want a rate limit error")
 	}
@@ -184,7 +193,7 @@ func TestClient_GetChannels_ErrorsOnSlackApplicationError(t *testing.T) {
 		response(200, `{"ok":false,"error":"invalid_auth"}`, nil),
 	)
 
-	got, err := client.GetChannels(&GetChannelsRequest{BearerToken: "xoxb-test"})
+	got, err := client.GetChannels(context.Background(), &GetChannelsRequest{BearerToken: "xoxb-test"})
 	if err == nil {
 		t.Fatalf("GetChannels() error = nil, want an error for ok:false")
 	}
@@ -210,7 +219,7 @@ func TestClient_GetChannels_ReturnsEmptySliceForNoChannels(t *testing.T) {
 		response(200, `{"ok":true,"channels":[]}`, nil),
 	)
 
-	got, err := client.GetChannels(&GetChannelsRequest{BearerToken: "xoxb-test"})
+	got, err := client.GetChannels(context.Background(), &GetChannelsRequest{BearerToken: "xoxb-test"})
 	if err != nil {
 		t.Fatalf("GetChannels() unexpected error = %v", err)
 	}
@@ -274,5 +283,114 @@ func TestHandleHTTPFailure(t *testing.T) {
 				t.Errorf("handleHTTPFailure(%d) internal = %q, want it to include the response body", tt.status, err.Error())
 			}
 		})
+	}
+}
+
+// The listing runs inside a synchronous OAuth callback. Retrying every page in
+// turn is not enough on a workspace that stays rate limited across dozens of
+// pages: without an overall budget the listing outlives the caller by minutes.
+func TestClient_GetChannels_StopsWhenTheBudgetIsSpent(t *testing.T) {
+	client, stub, _ := newTestClient(
+		response(200, `{"ok":true,"channels":[{"id":"C1","name":"general"}],"response_metadata":{"next_cursor":"page2"}}`, nil),
+		response(200, `{"ok":true,"channels":[{"id":"C2","name":"random"}],"response_metadata":{"next_cursor":"page3"}}`, nil),
+		response(200, `{"ok":true,"channels":[{"id":"C3","name":"design"}],"response_metadata":{"next_cursor":"page4"}}`, nil),
+	)
+
+	// Spend the budget after the first page comes back.
+	ctx, cancel := context.WithCancel(context.Background())
+	stub.onCall = func(calls int) {
+		if calls == 1 {
+			cancel()
+		}
+	}
+	defer cancel()
+
+	got, err := client.GetChannels(ctx, &GetChannelsRequest{BearerToken: "xoxb-test"})
+	if err != nil {
+		t.Fatalf("GetChannels() unexpected error = %v, want the pages fetched so far", err)
+	}
+
+	if want := []string{"general"}; !reflect.DeepEqual(channelNames(got), want) {
+		t.Errorf("GetChannels() = %v, want %v", channelNames(got), want)
+	}
+	if stub.calls != 1 {
+		t.Errorf("GetChannels() made %d requests, want it to stop after 1", stub.calls)
+	}
+}
+
+// A caller that has gone away leaves nothing to return, and there is no point
+// pretending the listing succeeded.
+func TestClient_GetChannels_ErrorsWhenAbandonedWithNoResults(t *testing.T) {
+	client, _, _ := newTestClient(
+		response(200, `{"ok":true,"channels":[{"id":"C1","name":"general"}]}`, nil),
+	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	got, err := client.GetChannels(ctx, &GetChannelsRequest{BearerToken: "xoxb-test"})
+	if err == nil {
+		t.Fatal("GetChannels() error = nil, want an error for an abandoned listing")
+	}
+	if !isAbandoned(err) {
+		t.Errorf("GetChannels() error = %v, want it to be an abandoned error", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("GetChannels() = %v, want no channels", got)
+	}
+}
+
+// Backing off past the budget only delays a page nothing is left to fetch.
+func TestClient_GetChannels_DoesNotBackOffPastTheBudget(t *testing.T) {
+	client, stub, slept := newTestClient(
+		response(200, `{"ok":true,"channels":[{"id":"C1","name":"general"}],"response_metadata":{"next_cursor":"page2"}}`, nil),
+		rateLimitedResponse("1"),
+		response(200, `{"ok":true,"channels":[{"id":"C2","name":"random"}]}`, nil),
+	)
+
+	// Spend the budget while the rate limited page is waiting to be retried.
+	ctx, cancel := context.WithCancel(context.Background())
+	stub.onCall = func(calls int) {
+		if calls == 2 {
+			cancel()
+		}
+	}
+	defer cancel()
+
+	got, err := client.GetChannels(ctx, &GetChannelsRequest{BearerToken: "xoxb-test"})
+	if err != nil {
+		t.Fatalf("GetChannels() unexpected error = %v", err)
+	}
+
+	if want := []string{"general"}; !reflect.DeepEqual(channelNames(got), want) {
+		t.Errorf("GetChannels() = %v, want %v", channelNames(got), want)
+	}
+	// The wait is entered once and abandoned, never repeated.
+	if len(*slept) != 1 {
+		t.Errorf("backoff attempts = %d, want 1", len(*slept))
+	}
+	if stub.calls != 2 {
+		t.Errorf("GetChannels() made %d requests, want it to stop after 2", stub.calls)
+	}
+}
+
+// The budget must leave the caller room to receive the response.
+func TestChannelListingBudget(t *testing.T) {
+	if channelListingBudget < maxRetryAfter {
+		t.Errorf("channelListingBudget = %v, want at least one retry to fit in it (%v)", channelListingBudget, maxRetryAfter)
+	}
+	if channelListingBudget > 30*time.Second {
+		t.Errorf("channelListingBudget = %v, want it under the caller's own timeout", channelListingBudget)
+	}
+}
+
+func TestSleep_ReturnsTheContextErrorWhenAbandoned(t *testing.T) {
+	client := &Client{}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	if err := client.sleep(ctx, time.Hour); !errors.Is(err, context.Canceled) {
+		t.Errorf("sleep() error = %v, want context.Canceled", err)
 	}
 }

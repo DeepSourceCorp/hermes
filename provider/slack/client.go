@@ -2,6 +2,7 @@ package slack
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -26,12 +27,23 @@ type Client struct {
 	Sleep func(time.Duration)
 }
 
-func (c *Client) sleep(d time.Duration) {
+// sleep waits for d, or gives up early if the caller has gone away or the
+// listing budget has run out. It reports the context error in that case.
+func (c *Client) sleep(ctx context.Context, d time.Duration) error {
 	if c.Sleep != nil {
 		c.Sleep(d)
-		return
+		return ctx.Err()
 	}
-	time.Sleep(d)
+
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+
+	select {
+	case <-timer.C:
+		return ctx.Err()
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 type SendMessageRequest struct {
@@ -113,6 +125,15 @@ const (
 	maxRetryAfter     = 15 * time.Second
 	defaultRetryAfter = 5 * time.Second
 
+	// channelListingBudget bounds the listing as a whole. Retrying per page is
+	// not enough on a workspace big enough to stay rate limited across dozens of
+	// pages: the listing then runs for minutes, long after the caller has timed
+	// out and stopped waiting for it, while still spending the workspace's Slack
+	// quota and starving the retry the user just kicked off. The budget has to
+	// stay comfortably under the caller's own timeout so a partial list arrives
+	// before it gives up.
+	channelListingBudget = 20 * time.Second
+
 	// Runaway guard in case Slack keeps handing back a next_cursor.
 	maxChannelPages = 200
 
@@ -156,6 +177,29 @@ func isRateLimited(err domain.IError) bool {
 	return ok
 }
 
+// abandonedError marks a listing that stopped because the budget ran out or
+// the caller disconnected, rather than because Slack refused us.
+type abandonedError struct {
+	domain.IError
+}
+
+func newAbandonedError(internal string) *abandonedError {
+	return &abandonedError{IError: errFailedOptsFetch(internal)}
+}
+
+func isAbandoned(err domain.IError) bool {
+	_, ok := err.(*abandonedError)
+	return ok
+}
+
+// partialResultsUsable reports whether the pages fetched before err are still
+// worth returning. Slack rate limiting us and the budget running out both stop
+// the listing short without invalidating what already came back; anything else
+// means we cannot trust the listing at all.
+func partialResultsUsable(err domain.IError) bool {
+	return isRateLimited(err) || isAbandoned(err)
+}
+
 // retryAfterFrom reads Slack's Retry-After header, falling back to a default
 // when it is missing or unparseable, and clamping it to maxRetryAfter.
 func retryAfterFrom(header http.Header) time.Duration {
@@ -170,7 +214,7 @@ func retryAfterFrom(header http.Header) time.Duration {
 	return maxRetryAfter
 }
 
-func (c *Client) getChannelsPage(request *GetChannelsRequest, cursor string) (*GetChannelsResponse, domain.IError) {
+func (c *Client) getChannelsPage(ctx context.Context, request *GetChannelsRequest, cursor string) (*GetChannelsResponse, domain.IError) {
 	var response = new(GetChannelsResponse)
 
 	requestUrl := getChannelsURL
@@ -178,7 +222,7 @@ func (c *Client) getChannelsPage(request *GetChannelsRequest, cursor string) (*G
 		requestUrl += "&cursor=" + url.QueryEscape(cursor)
 	}
 
-	req, err := http.NewRequest("GET", requestUrl, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, "GET", requestUrl, http.NoBody)
 	if err != nil {
 		log.Errorf("slack: failed creating request for options: %v", err)
 		return response, errFailedOptsFetch(err.Error())
@@ -189,6 +233,11 @@ func (c *Client) getChannelsPage(request *GetChannelsRequest, cursor string) (*G
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
+		// A cancelled request is the budget or the caller, not Slack, so it must
+		// not be logged or classified as a fetch failure.
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return response, newAbandonedError(ctxErr.Error())
+		}
 		log.Errorf("slack: failed sending request for options: %v", err)
 		return response, errFailedOptsFetch(err.Error())
 	}
@@ -231,9 +280,13 @@ func (c *Client) getChannelsPage(request *GetChannelsRequest, cursor string) (*G
 // getChannelsPageWithBackoff fetches a single page, retrying a bounded number
 // of times while Slack rate limits us. Non rate limit failures are returned
 // straight away.
-func (c *Client) getChannelsPageWithBackoff(request *GetChannelsRequest, cursor string) (*GetChannelsResponse, domain.IError) {
+func (c *Client) getChannelsPageWithBackoff(ctx context.Context, request *GetChannelsRequest, cursor string) (*GetChannelsResponse, domain.IError) {
 	for attempt := 0; ; attempt++ {
-		response, err := c.getChannelsPage(request, cursor)
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return new(GetChannelsResponse), newAbandonedError(ctxErr.Error())
+		}
+
+		response, err := c.getChannelsPage(ctx, request, cursor)
 		if err == nil {
 			return response, nil
 		}
@@ -251,24 +304,32 @@ func (c *Client) getChannelsPageWithBackoff(request *GetChannelsRequest, cursor 
 			"slack: rate limited fetching channel page %q, retrying in %v (attempt %d of %d)",
 			cursor, rateLimited.retryAfter, attempt+1, maxRateLimitRetries,
 		)
-		c.sleep(rateLimited.retryAfter)
+
+		// Waiting out the whole Retry-After is pointless once the budget is
+		// spent, since nothing would be left to fetch the page with.
+		if sleepErr := c.sleep(ctx, rateLimited.retryAfter); sleepErr != nil {
+			return response, newAbandonedError(sleepErr.Error())
+		}
 	}
 }
 
-func (c *Client) GetChannels(request *GetChannelsRequest) ([]map[string]string, domain.IError) {
+func (c *Client) GetChannels(ctx context.Context, request *GetChannelsRequest) ([]map[string]string, domain.IError) {
+	ctx, cancel := context.WithTimeout(ctx, channelListingBudget)
+	defer cancel()
+
 	channels := make([]map[string]string, 0)
 	cursor := ""
 
 	for page := 0; page < maxChannelPages; page++ {
-		response, err := c.getChannelsPageWithBackoff(request, cursor)
+		response, err := c.getChannelsPageWithBackoff(ctx, request, cursor)
 		if err != nil {
-			// Slack kept rate limiting us. The pages that did come back are far
-			// more useful than a hard failure, which stops the integration from
-			// being installed at all.
-			if isRateLimited(err) && len(channels) > 0 {
+			// Slack kept rate limiting us, or we ran out of budget. The pages
+			// that did come back are far more useful than a hard failure, which
+			// stops the integration from being installed at all.
+			if partialResultsUsable(err) && len(channels) > 0 {
 				log.Warnf(
-					"slack: rate limited while paginating channels, returning the %d channels fetched so far",
-					len(channels),
+					"slack: stopped paginating channels (%v), returning the %d channels fetched so far",
+					err.Error(), len(channels),
 				)
 				return channels, nil
 			}
