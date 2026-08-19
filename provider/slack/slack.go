@@ -119,11 +119,13 @@ func (p *Payload) Validate() domain.IError {
 	return nil
 }
 
-func (p *defaultSlack) GetOptValues(_ context.Context, secret *domain.NotifierSecret) (map[string]interface{}, error) {
+func (p *defaultSlack) GetOptValues(ctx context.Context, secret *domain.NotifierSecret) (map[string]interface{}, error) {
 	request := &GetChannelsRequest{
 		BearerToken: secret.Token,
 	}
-	channels, err := p.Client.GetChannels(request)
+	// The request context carries the caller's cancellation, so a listing whose
+	// caller has already given up stops instead of spending more Slack quota.
+	channels, err := p.Client.GetChannels(ctx, request)
 	if err != nil {
 		log.Errorf("slack: failed to get channels : %v", err)
 		return nil, err
