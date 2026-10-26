@@ -16,7 +16,8 @@ RUN make deps \
 ###############
 # FINAL STAGE #
 ###############
-FROM alpine:3.18
+FROM alpine:3.23
+RUN apk add --no-cache --upgrade ca-certificates
 
 RUN mkdir -p /app
 COPY --from=builder /bin/hermes /app
