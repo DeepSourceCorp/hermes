@@ -1,7 +1,7 @@
 ###############
 # BUILD STAGE #
 ###############
-FROM golang:1.20.6-alpine3.18 AS builder
+FROM golang:1.26.10-alpine3.23 AS builder
 
 RUN apk update \
     && apk add make \
