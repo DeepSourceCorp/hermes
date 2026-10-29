@@ -1,7 +1,7 @@
 ###############
 # BUILD STAGE #
 ###############
-FROM golang:1.20.6-alpine3.18 AS builder
+FROM golang:1.26.10-alpine3.23 AS builder
 
 RUN apk update \
     && apk add make \
@@ -16,7 +16,8 @@ RUN make deps \
 ###############
 # FINAL STAGE #
 ###############
-FROM alpine:3.18
+FROM alpine:3.23
+RUN apk add --no-cache --upgrade ca-certificates
 
 RUN mkdir -p /app
 COPY --from=builder /bin/hermes /app
