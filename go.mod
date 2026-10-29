@@ -1,8 +1,6 @@
 module github.com/deepsourcelabs/hermes
 
-go 1.20
-
-toolchain go1.26.10
+go 1.26.10
 
 require (
 	github.com/fsnotify/fsnotify v1.5.1
@@ -13,7 +11,6 @@ require (
 	github.com/mitchellh/mapstructure v1.4.3
 	github.com/segmentio/ksuid v1.0.4
 	github.com/sirupsen/logrus v1.8.1
-	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	gorm.io/driver/postgres v1.3.1
 	gorm.io/gorm v1.23.1
